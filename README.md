@@ -92,6 +92,18 @@ python scripts/public_test.py --blocks 10 --msg-bytes 32 --noise-levels 0,1,2
 - Applied **only** to structured state (D), never to ciphertext
 - Uses zlib-9 (placeholder; swap for custom 3–6–9 codec)
 
+## Mathematical Foundations
+
+For detailed mathematical treatment, see [MATHEMATICS.md](MATHEMATICS.md).
+
+**Key invariant:** Secrecy ⊥ Structure
+
+All components use standard, conservative cryptographic primitives:
+- Hash chains (SHA-256, BLAKE2)
+- Authenticated encryption (AES-GCM, ChaCha20-Poly1305)
+- Error-correcting codes (Reed-Solomon, LDPC)
+- Channel interleaving (standard information theory)
+
 ## Next Steps: Real Implementation
 
 To pass T4 (noise robustness) and production-readiness:
