@@ -1,0 +1,19 @@
+[project]
+name = "geophase"
+version = "0.1.0"
+description = "Public black-box test harness for dual-chain authenticated design"
+requires-python = ">=3.10"
+authors = [
+    {name = "Contributors", email = "maintainers@example.com"}
+]
+dependencies = [
+    "numpy>=1.24.0",
+    "matplotlib>=3.7.0"
+]
+
+[build-system]
+requires = ["setuptools", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["src"]
