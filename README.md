@@ -1,21 +1,46 @@
-# Dual-Chain GeoPhase (Public Test Repo)
+# GeoPhase
 
 **Security Covenant:** ✅ AEAD-Gated Acceptance (ECC never authorizes)
 
-This repository provides a **public, black-box verification harness** for a dual-chain authenticated design:
-- **Above chain:** commitments (H_t, A_t) + structured-state digesting
-- **Below chain:** noise-tolerant carrier transport of AEAD ciphertext (via ECC)
-- **Compression:** applied only to structured deltas (never ciphertext)
+GeoPhase is a **transport + verification pattern** for authenticated ciphertext.
 
-## What this repo is
-- A **testable** public audit harness
-- A reference CLI interface for ENCODE / VERIFY
-- A reference implementation of compression and commitment logic
+It answers one engineering question:
 
-## What this repo is not
-- A disclosure of private schedules/keys
-- A claim of a new cryptographic primitive
-- A claim of "post-quantum" unless backed by chosen primitives
+> **How do we move authenticated ciphertext through noisy/lossy channels
+> without letting "transport success" be mistaken for "authenticity"?**
+
+GeoPhase solves this by **separating cryptographic trust (AEAD) from geometric robustness (ECC + interleaving)**.
+
+📖 **Read [GEOPHASE.md](GEOPHASE.md) for the full conceptual model.**
+
+---
+
+## The Covenant (One Rule That Matters)
+
+> **ACCEPT ⇔ AEAD_verify(ciphertext, AD) = true**
+
+Error correction is transport-only. It may repair bytes, but it never decides validity.
+
+This rule is enforced by:
+- A single acceptance gate (`verify_gate()`)
+- Immutable `VerifyResult` type
+- CI tripwire tests (5 non-regression checks)
+
+---
+
+## About This Repo
+
+This repository provides a **public, black-box verification harness**:
+
+- ✅ **Testable:** T1–T4 harness with deterministic + noise-robust modes
+- ✅ **Auditable:** Covenant enforcement via code structure + CI
+- ✅ **Reference implementation:** ENCODE/VERIFY CLI, codec, commitment logic
+- ✅ **Conservative:** Composes standard AEAD (ChaCha20-Poly1305) + standard ECC (Reed–Solomon)
+
+**What this is NOT:**
+- ❌ A new cryptographic primitive
+- ❌ "Post-quantum by magic"
+- ❌ Security by obscurity
 
 ## Quickstart
 
@@ -99,44 +124,68 @@ Run with:
 python scripts/public_test.py --blocks 10 --msg-bytes 32 --noise-levels 0,1,2
 ```
 
+## How It Works
+
+### Encode
+```
+message M
+  → build Associated Data (AD) binding public context
+  → AEAD encrypt → ciphertext C
+  → interleave + ECC encode
+  → carrier bytes (noise-tolerant)
+```
+
+### Verify
+```
+carrier bytes
+  → ECC decode + deinterleave (best effort)
+  → candidate ciphertext Ĉ
+  → AEAD verify/decrypt (SOLE gate)
+  → ACCEPT + recover M   OR   REJECT
+```
+
+**Key invariant:** ECC can corrupt, fail to recover, or succeed.  
+Only AEAD decides which outcome is valid. Transport noise cannot leak into trust decisions.
+
+---
+
 ## Architecture
 
-### Above Chain (Commitments)
-- **D** = canonical JSON of structured state
-- **g_t** = H(D) — digest of current state
-- **H_prev** — hash of previous commitment (chained)
-- **A_t** = H(H_prev ∥ g_t ∥ public_header) — availability witness
-- **H_t** = H(H_prev ∥ H(ct) ∥ g_t) — binding hash
+### Dual Chains
 
-### Below Chain (Carrier)
-- **ct** = AEAD(key, nonce, msg) — authenticated encryption (placeholder: msg)
-- **carrier** = ECC_encode(ct) ∥ padding — error-correcting code transport
+#### Message Chain (Trust)
+- AEAD-protected payloads (ChaCha20-Poly1305)
+- Acceptance gated exclusively by AEAD verification
+- Immutable security boundary
 
-### Compression
-- Applied **only** to structured state (D), never to ciphertext
-- Uses zlib-9 (placeholder; swap for custom 3–6–9 codec)
+#### Transport Chain (Robustness)
+- Reed–Solomon ECC + deterministic interleaving
+- Length framing (decode boundaries explicit, never guessed)
+- Tuning parameters (NSYM, noise metrics)
 
-## Mathematical Foundations
+## The Security Model
 
-For detailed mathematical treatment, see [MATHEMATICS.md](MATHEMATICS.md).
+**Confidentiality & Integrity** → AEAD (ChaCha20-Poly1305)
 
-**Key invariant:** Secrecy ⊥ Structure
+**Robustness** → ECC + interleaving (transport-only)
 
-All components use standard, conservative cryptographic primitives:
-- Hash chains (SHA-256, BLAKE2)
-- Authenticated encryption (AES-GCM, ChaCha20-Poly1305)
-- Error-correcting codes (Reed-Solomon, LDPC)
-- Channel interleaving (standard information theory)
+**Covenant Enforcement** → immutable gate + CI tripwires
 
-## Next Steps: Real Implementation
+For detailed treatment, see [GEOPHASE.md](GEOPHASE.md) and [MATHEMATICS.md](MATHEMATICS.md).
 
-To pass T4 (noise robustness) and production-readiness:
+## Current Status
 
-1. **Implement real AEAD** (AES-GCM, ChaCha20-Poly1305)
-2. **Add Reed-Solomon or similar ECC** in `src/geophase/codec.py`
-3. **Interleave carrier** for burst-noise robustness
-4. **Remove plaintext ciphertext from meta** (toy mode only)
-5. **Formal security review** of commitment chain
+✅ **v0.2.0 (Covenant + ECC Integrated)**
+
+- [x] AEAD encryption (ChaCha20-Poly1305)
+- [x] Reed–Solomon ECC with deterministic interleaving
+- [x] Covenant enforcement (immutable gate + CI tests)
+- [x] T1–T4 black-box verification harness
+- [x] Deterministic + HKDF KDF modes (feature-flagged)
+- [x] Complete documentation (tuning guide, release notes)
+
+**All tests passing:** 20/20 (including both KDF modes)  
+**Covenant preserved:** 5 non-regression tripwires, all green
 
 ## Testing
 
@@ -172,10 +221,24 @@ GEOPHASE_USE_HKDF=1 python scripts/encode_blackbox.py < request.json
 
 See [ECC_TUNING.md](ECC_TUNING.md) for detailed tuning, measurement, and proof.
 
+## Documentation
+
+- **[GEOPHASE.md](GEOPHASE.md)** — Conceptual model & architecture
+- **[ECC_TUNING.md](ECC_TUNING.md)** — Noise robustness tuning & T4 measurement
+- **[RELEASE_v0.2.0.md](RELEASE_v0.2.0.md)** — Release notes & feature summary
+- **[SECURITY.md](SECURITY.md)** — Security policy & covenant enforcement
+- **[MATHEMATICS.md](MATHEMATICS.md)** — Formal proofs & theorems
+
 ## License
 
 MIT. See [LICENSE](LICENSE).
 
 ## Security & Disclosure
 
-See [SECURITY.md](SECURITY.md).
+GeoPhase's security rests entirely on:
+
+1. Standard cryptographic primitives (AEAD, SHA-256, Reed–Solomon)
+2. The covenant rule (`ACCEPT ⇔ AEAD_verify(...)`)
+3. Enforcement via immutable types and CI tripwires
+
+For security concerns, see [SECURITY.md](SECURITY.md).
