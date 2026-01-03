@@ -1,19 +1,26 @@
 """
-codec.py: AEAD (ChaCha20-Poly1305) and ECC placeholder.
+codec.py: AEAD (ChaCha20-Poly1305) + Reed-Solomon ECC transport layer.
 
 Provides:
-  - ChaCha20-Poly1305 for confidentiality + integrity
+  - ChaCha20-Poly1305 for confidentiality + integrity (AEAD is sole auth gate)
   - KDF for deterministic per-block key derivation
-  - Placeholder for Reed-Solomon ECC (T4)
+  - Reed-Solomon ECC for transport reliability (never decides acceptance)
+  
+Security Covenant:
+  ACCEPT ⟺ AEAD_verify(ciphertext, AD) = true
+  ECC is strictly a transport-layer repair mechanism.
 """
 
 from cryptography.hazmat.primitives.ciphers.aead import ChaCha20Poly1305
 from hashlib import sha256
+from reedsolo import RSCodec, ReedSolomonError
 import os
 
 # Constants
 KEY_LEN = 32      # 256-bit key for ChaCha20
 NONCE_LEN = 12    # RFC 8439 standard nonce length
+TAG_LEN = 16      # Poly1305 tag length
+NSYM = 64         # Reed-Solomon redundancy bytes (corrects up to 32 byte errors)
 
 
 def kdf(master_key: bytes, t: int) -> bytes:
@@ -99,71 +106,40 @@ def decrypt(
     return aead.decrypt(nonce, ct, associated_data)
 
 
-def ecc_encode(message: bytes, redundancy: int = 32) -> bytes:
+def ecc_encode(payload: bytes) -> bytes:
     """
-    Encode message with error-correcting code.
+    Reed-Solomon encode payload with redundancy.
     
     Args:
-        message: Raw message bytes.
-        redundancy: Number of redundancy bytes (placeholder).
+        payload: Bytes to encode.
     
     Returns:
-        Encoded message with ECC parity.
+        Encoded bytes: payload || parity (length = len(payload) + NSYM).
     
-    TODO: Implement Reed-Solomon or similar.
+    Note: Encodes payload as-is. Can correct up to NSYM//2 errors.
     """
-    # Placeholder: return message as-is
-    return message
+    rs = RSCodec(NSYM)
+    return bytes(rs.encode(payload))
 
 
-def ecc_decode(encoded: bytes, num_errors: int = 0) -> bytes:
+def ecc_decode(codeword: bytes) -> bytes:
     """
-    Decode message with error correction.
+    Reed-Solomon decode codeword, correcting errors if possible.
     
     Args:
-        encoded: Encoded message bytes.
-        num_errors: Expected number of error bytes (for statistics).
+        codeword: Encoded bytes with ECC parity.
     
     Returns:
-        Decoded message (or None if unrecoverable).
+        Decoded message, or empty bytes if unrecoverable.
     
-    TODO: Implement Reed-Solomon or similar.
+    Security: ECC may output garbage on decoding failure.
+              AEAD gate (verify_gate) must verify the output before accepting.
     """
-    # Placeholder: return encoded as-is
-    return encoded
-
-
-def carrier_embed(ciphertext: bytes, ecc_redundancy: int = 32, padding: int = 1024) -> bytes:
-    """
-    Embed AEAD ciphertext into noise-tolerant carrier.
-    
-    Args:
-        ciphertext: AEAD ciphertext bytes.
-        ecc_redundancy: ECC redundancy bytes.
-        padding: Additional padding bytes.
-    
-    Returns:
-        Carrier bytes (ECC-encoded + padding).
-    
-    TODO: Implement interleaving and real ECC.
-    """
-    # Placeholder: return ciphertext + padding
-    import os
-    return ciphertext + os.urandom(padding)
-
-
-def carrier_extract(carrier: bytes, ciphertext_len: int) -> bytes:
-    """
-    Extract AEAD ciphertext from carrier.
-    
-    Args:
-        carrier: Carrier bytes.
-        ciphertext_len: Expected ciphertext length.
-    
-    Returns:
-        Extracted ciphertext (or None if unrecoverable).
-    
-    TODO: Implement ECC decoding and validation.
-    """
-    # Placeholder: extract first N bytes
-    return carrier[:ciphertext_len]
+    rs = RSCodec(NSYM)
+    try:
+        # reedsolo.decode returns (msg, ecc, errata_pos)
+        decoded, ecc, errata_pos = rs.decode(codeword)
+        return bytes(decoded)
+    except ReedSolomonError:
+        # Cannot recover; return empty to force AEAD rejection
+        return b""

@@ -1,10 +1,11 @@
 """
-util.py: Utility functions for canonical JSON, base64, and hashing.
+util.py: Utility functions for canonical JSON, base64, hashing, and interleaving.
 """
 
 import json
 import base64
 import hashlib
+import random
 from typing import Dict, Any
 
 
@@ -96,3 +97,121 @@ def hex_decode(s: str) -> bytes:
         return bytes.fromhex(s)
     except ValueError as e:
         raise ValueError(f"Hex decode failed: {e}")
+
+
+def permute(data: bytes, seed_material: bytes) -> bytes:
+    """
+    Deterministically permute bytes using seed material (for ECC interleaving).
+    
+    Args:
+        data: Bytes to permute.
+        seed_material: Seed for deterministic shuffling.
+    
+    Returns:
+        Permuted bytes (same length as input).
+    
+    Note: Deterministic permutation for transport layer robustness.
+          Helps RS recovery under burst noise.
+    """
+    n = len(data)
+    if n == 0:
+        return data
+    
+    # Seed RNG with SHA-256(seed_material)
+    idx = list(range(n))
+    rng = random.Random(hashlib.sha256(seed_material).digest())
+    rng.shuffle(idx)
+    
+    # Build permuted output
+    out = bytearray(n)
+    for i, j in enumerate(idx):
+        out[i] = data[j]
+    
+    return bytes(out)
+
+
+def unpermute(data: bytes, seed_material: bytes) -> bytes:
+    """
+    Reverse a deterministic permutation (inverse of permute()).
+    
+    Args:
+        data: Permuted bytes.
+        seed_material: Same seed used in permute().
+    
+    Returns:
+        Original bytes (before permutation).
+    """
+    n = len(data)
+    if n == 0:
+        return data
+    
+    # Recreate the same index mapping
+    idx = list(range(n))
+    rng = random.Random(hashlib.sha256(seed_material).digest())
+    rng.shuffle(idx)
+    
+    # Reverse the permutation
+    out = bytearray(n)
+    for i, j in enumerate(idx):
+        out[j] = data[i]
+    
+    return bytes(out)
+
+
+def permute(data: bytes, seed_material: bytes) -> bytes:
+    """
+    Deterministically permute bytes using seed material (for ECC interleaving).
+    
+    Args:
+        data: Bytes to permute.
+        seed_material: Seed for deterministic shuffling.
+    
+    Returns:
+        Permuted bytes (same length as input).
+    
+    Note: Deterministic permutation for transport layer robustness.
+          Helps RS recovery under burst noise.
+    """
+    n = len(data)
+    if n == 0:
+        return data
+    
+    # Seed RNG with SHA-256(seed_material)
+    idx = list(range(n))
+    rng = random.Random(hashlib.sha256(seed_material).digest())
+    rng.shuffle(idx)
+    
+    # Build permuted output
+    out = bytearray(n)
+    for i, j in enumerate(idx):
+        out[i] = data[j]
+    
+    return bytes(out)
+
+
+def unpermute(data: bytes, seed_material: bytes) -> bytes:
+    """
+    Reverse a deterministic permutation (inverse of permute()).
+    
+    Args:
+        data: Permuted bytes.
+        seed_material: Same seed used in permute().
+    
+    Returns:
+        Original bytes (before permutation).
+    """
+    n = len(data)
+    if n == 0:
+        return data
+    
+    # Recreate the same index mapping
+    idx = list(range(n))
+    rng = random.Random(hashlib.sha256(seed_material).digest())
+    rng.shuffle(idx)
+    
+    # Reverse the permutation
+    out = bytearray(n)
+    for i, j in enumerate(idx):
+        out[j] = data[i]
+    
+    return bytes(out)
