@@ -12,6 +12,8 @@ Security Covenant:
 """
 
 from cryptography.hazmat.primitives.ciphers.aead import ChaCha20Poly1305
+from cryptography.hazmat.primitives.kdf.hkdf import HKDF
+from cryptography.hazmat.primitives import hashes
 from hashlib import sha256
 from reedsolo import RSCodec, ReedSolomonError
 import os
@@ -22,21 +24,38 @@ NONCE_LEN = 12    # RFC 8439 standard nonce length
 TAG_LEN = 16      # Poly1305 tag length
 NSYM = 64         # Reed-Solomon redundancy bytes (corrects up to 32 byte errors)
 
+# Feature flags (environment-driven)
+USE_HKDF = os.getenv("GEOPHASE_USE_HKDF", "0") == "1"
+
 
 def kdf(master_key: bytes, t: int) -> bytes:
     """
-    Deterministic per-block key derivation.
+    Per-block key derivation (HKDF or deterministic SHA-256).
     
     Args:
         master_key: Base key (256-bit).
         t: Block counter.
     
     Returns:
-        Derived key for block t (SHA-256 output).
+        Derived key for block t (32 bytes).
     
-    Note: Public-safe placeholder. Replace with HKDF for production.
+    Notes:
+        - Test mode (default): Deterministic SHA-256 for reproducibility
+        - Prod mode (GEOPHASE_USE_HKDF=1): HKDF-SHA-256 per RFC 5869
     """
-    return sha256(master_key + t.to_bytes(8, "big")).digest()
+    info = b"geophase|block|" + t.to_bytes(8, "big")
+    
+    if USE_HKDF:
+        # Production: HKDF-SHA-256 (standardized, audited)
+        return HKDF(
+            algorithm=hashes.SHA256(),
+            length=KEY_LEN,
+            salt=None,
+            info=info,
+        ).derive(master_key)
+    
+    # Test mode: Deterministic KDF (reproducible T1)
+    return sha256(master_key + info).digest()
 
 
 def encrypt(

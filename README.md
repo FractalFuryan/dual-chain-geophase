@@ -145,6 +145,33 @@ Run smoke tests:
 python -m pytest tests/ -v
 ```
 
+## Transport Tuning
+
+Reed–Solomon (ECC) error correction is configurable for different channel noise profiles.
+
+### NSYM (Redundancy Bytes)
+
+- **NSYM=64** (default): Corrects ≤32 byte errors per block
+  - Suitable for ~99% of white-noise channels
+  - Overhead: +64 bytes per 1024-byte carrier
+  
+- **NSYM=96, 128**: For harsher channels (FM, satellite, etc.)
+  - See [ECC_TUNING.md](ECC_TUNING.md) for measurement procedure
+
+### Feature Flags
+
+```bash
+# Test mode (default): Deterministic KDF for reproducibility (T1)
+python scripts/encode_blackbox.py < request.json
+
+# Production mode: HKDF-SHA256 for randomness/strength
+GEOPHASE_USE_HKDF=1 python scripts/encode_blackbox.py < request.json
+```
+
+**Key invariant:** Changing ECC tuning or KDF never affects the security covenant. AEAD remains the sole acceptance gate.
+
+See [ECC_TUNING.md](ECC_TUNING.md) for detailed tuning, measurement, and proof.
+
 ## License
 
 MIT. See [LICENSE](LICENSE).
