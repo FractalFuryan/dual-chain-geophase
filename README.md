@@ -30,6 +30,28 @@ python scripts/public_test.py \
   --blocks 50 --msg-bytes 256 --noise-levels 0,1,2,4,8,16,32
 ```
 
+## Self-Check (Automated Verification)
+
+To verify the repo is in good shape, run:
+
+```bash
+./self_check.sh
+```
+
+This checks:
+- Python environment
+- Package imports
+- Mathematical documentation
+- Unit tests (11 tests)
+- Black-box test harness (T1–T3)
+- Known limitations (T4 requires real ECC)
+
+**Perfect for GitHub Codespaces:**
+```bash
+# In Codespaces terminal:
+./self_check.sh
+```
+
 ## Security Model
 
 **Confidentiality and integrity** reduce to **standard AEAD** (placeholder: plaintext transport in harness; real build uses authenticated encryption).
