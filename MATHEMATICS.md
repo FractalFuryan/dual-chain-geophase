@@ -119,6 +119,33 @@ None of these are novel. The **novelty is in composition and verification method
 
 ---
 
+## 8. The ECC–AEAD Covenant (Acceptance Theorem)
+
+Define the acceptance predicate:
+
+$$\mathrm{Acc}(\tilde{w}, AD) := \begin{cases}
+1 & \text{if } \mathrm{AEAD\_verify}_K(\mathrm{ECC\_dec}(\tilde{w}), AD)=\text{true}\\
+0 & \text{otherwise}
+\end{cases}$$
+
+### Theorem (Authorization Isolation)
+For any adversarial corruption process $\eta$, the system accepts **only** ciphertexts that pass AEAD verification under the bound key $K$ and associated data $AD$. ECC decoding success does not imply authenticity.
+
+### Consequence
+Transport coding choices (Reed–Solomon, LDPC, Turbo, interleaving) may change the *acceptance rate under noise* but cannot weaken authenticity unless they bypass AEAD.
+
+### Proof Sketch
+- ECC decoding outputs $\hat{c}$, which may be:
+  - The correct ciphertext (with high probability if noise is within the code distance)
+  - The uncorrected, noisy ciphertext
+  - Garbage (if noise exceeds the code distance)
+- AEAD verification checks $\mathrm{AEAD\_verify}_K(\hat{c}, AD)$.
+- This predicate is **deterministic** and **unforgeable** (by Poly1305 security).
+- No combination of ECC output can produce acceptance without a valid MAC.
+- QED.
+
+---
+
 ## References
 
 - Goldreich, O. (2001). *Foundations of Cryptography*.

@@ -1,5 +1,7 @@
 # Dual-Chain GeoPhase (Public Test Repo)
 
+**Security Covenant:** ✅ AEAD-Gated Acceptance (ECC never authorizes)
+
 This repository provides a **public, black-box verification harness** for a dual-chain authenticated design:
 - **Above chain:** commitments (H_t, A_t) + structured-state digesting
 - **Below chain:** noise-tolerant carrier transport of AEAD ciphertext (via ECC)
