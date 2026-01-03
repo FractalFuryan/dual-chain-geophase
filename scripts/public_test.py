@@ -132,6 +132,7 @@ def test_t2_correctness(
             "A_t": enc_out["A_t"],
             "carrier_b64": enc_out["carrier_b64"],
             "compressed_struct_b64": enc_out["compressed_struct_b64"],
+            "msg_len": msg_bytes,
         }
 
         success, status, msg_out_b64 = run_verify(verify_script, verify_req)
@@ -197,6 +198,7 @@ def test_t3_rejection(
             "A_t": enc_out["A_t"],
             "carrier_b64": enc_out["carrier_b64"],
             "compressed_struct_b64": enc_out["compressed_struct_b64"],
+            "msg_len": msg_bytes,
         }
 
         success, status, _ = run_verify(verify_wrong_script, verify_req)
@@ -253,6 +255,7 @@ def test_t4_noise_robustness(
                 "A_t": enc_out["A_t"],
                 "carrier_b64": noisy_carrier,
                 "compressed_struct_b64": enc_out["compressed_struct_b64"],
+                "msg_len": msg_bytes,
             }
 
             success, status, msg_out_b64 = run_verify(verify_script, verify_req)

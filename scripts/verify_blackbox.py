@@ -28,6 +28,9 @@ def main():
     A_t = bytes.fromhex(req["A_t"])
     carrier = base64.b64decode(req["carrier_b64"])
     compressed_struct = base64.b64decode(req["compressed_struct_b64"])
+    
+    # Extract message length (default 256 for backward compatibility)
+    msg_len = int(req.get("msg_len", 256))
 
     try:
         D = zlib.decompress(compressed_struct)
@@ -42,7 +45,7 @@ def main():
 
     # Carrier placeholder: first N bytes is "ct" which is the msg in toy mode.
     # In real build this becomes ECC decode -> AEAD verify.
-    ct = carrier[:256]  # harness uses msg-bytes=256 by default
+    ct = carrier[:msg_len]
 
     H_chk = H(H_prev + H(ct) + g_t)
 
