@@ -28,11 +28,16 @@ jobs:
           pip install -e .
 
       - name: Run self-check
+        env:
+          PYTHONPATH: src
         run: |
           chmod +x ./self_check.sh
           ./self_check.sh
 
       - name: Run unit tests (explicit)
+        env:
+          PYTHONPATH: src
+          GEOPHASE_USE_HKDF: "0"
         run: |
           PYTHONPATH=src python -m pytest -q --tb=short
 

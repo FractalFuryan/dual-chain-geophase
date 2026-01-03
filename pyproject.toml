@@ -1,14 +1,14 @@
 [project]
 name = "geophase"
-version = "0.1.0"
-description = "Public black-box test harness for dual-chain authenticated design"
+version = "0.2.0"
+description = "Covenant-first block-chain transport pattern for authenticated ciphertext"
 requires-python = ">=3.10"
 authors = [
     {name = "Contributors", email = "maintainers@example.com"}
 ]
 dependencies = [
-    "numpy>=1.24.0",
-    "matplotlib>=3.7.0"
+    "cryptography>=42.0",
+    "reedsolo>=1.7"
 ]
 
 [build-system]
@@ -17,3 +17,6 @@ build-backend = "setuptools.build_meta"
 
 [tool.setuptools.packages.find]
 where = ["src"]
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
