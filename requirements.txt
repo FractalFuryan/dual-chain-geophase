@@ -1,1 +1,2 @@
-cryptography>=42.0reedsolo>=1.7
+cryptography>=42.0
+reedsolo>=1.7
