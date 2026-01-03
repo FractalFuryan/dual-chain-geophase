@@ -20,6 +20,9 @@ sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
 from geophase.codec import NONCE_LEN, TAG_LEN, NSYM
 
+# Dynamic repo root (works in Codespaces, CI, and anywhere)
+REPO_ROOT = Path(__file__).resolve().parents[1]
+
 
 def run_encode(t, msg_b64, public_header, structured_state):
     """Invoke encode_blackbox.py via CLI."""
@@ -34,7 +37,7 @@ def run_encode(t, msg_b64, public_header, structured_state):
         input=json.dumps(req, separators=(",", ":")).encode(),
         capture_output=True,
         text=False,
-        cwd="/workspaces/dual-chain-geophase",
+        cwd=str(REPO_ROOT),
     )
     if proc.returncode != 0:
         raise RuntimeError(f"encode_blackbox failed: {proc.stderr.decode()}")
@@ -57,7 +60,7 @@ def run_verify(t, msg_len, H_t, A_t, carrier_b64, compressed_struct_b64, public_
         input=json.dumps(req, separators=(",", ":")).encode(),
         capture_output=True,
         text=False,
-        cwd="/workspaces/dual-chain-geophase",
+        cwd=str(REPO_ROOT),
     )
     if proc.returncode != 0:
         raise RuntimeError(f"verify_blackbox failed: {proc.stderr.decode()}")
