@@ -1,6 +1,9 @@
 #!/usr/bin/env python3
 """
 Verify CLI (correct key): Read commitments + carrier, verify + recover message.
+
+Authenticated decryption via ChaCha20-Poly1305: any tampering → REJECT.
+ECC decoding placeholder (TODO: T4).
 """
 
 import sys
@@ -8,6 +11,10 @@ import json
 import base64
 import hashlib
 import zlib
+from geophase.codec import decrypt
+
+# Master key for public test (must match encode)
+MASTER_KEY = b"PUBLIC_TEST_MASTER_KEY_256_BITS!"
 
 
 def H(b: bytes) -> bytes:
@@ -43,16 +50,32 @@ def main():
 
     A_chk = H(H_prev + g_t + canon(public_header))
 
-    # Carrier placeholder: first N bytes is "ct" which is the msg in toy mode.
-    # In real build this becomes ECC decode -> AEAD verify.
-    ct = carrier[:msg_len]
+    # Extract ciphertext from carrier
+    # Format: nonce (12) || ct || tag (16)
+    # Total AEAD output length = plaintext_len + 16 (for tag)
+    # For variable msg_len: AEAD ct = nonce + (plaintext + tag)
+    ct = carrier[:msg_len + 28]  # 12 (nonce) + msg_len + 16 (tag)
+
+    # Authenticated decryption: any tampering → exception → REJECT
+    associated_data = canon({
+        "t": t,
+        "public_header": public_header,
+        "H_prev": H_prev.hex(),
+    })
+
+    try:
+        msg = decrypt(MASTER_KEY, t, ct, associated_data)
+    except Exception:
+        # Decryption failed (bad MAC or corrupt ciphertext)
+        print(json.dumps({"status": "REJECT"}, separators=(",", ":")))
+        return
 
     H_chk = H(H_prev + H(ct) + g_t)
 
     if A_chk != A_t or H_chk != H_t:
         out = {"status": "REJECT"}
     else:
-        out = {"status": "ACCEPT", "message_out_b64": base64.b64encode(ct).decode()}
+        out = {"status": "ACCEPT", "message_out_b64": base64.b64encode(msg).decode()}
 
     json.dump(out, sys.stdout, separators=(",", ":"))
     print()

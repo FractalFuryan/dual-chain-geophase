@@ -1,2 +1,1 @@
-numpy>=1.24.0
-matplotlib>=3.7.0
+cryptography>=42.0

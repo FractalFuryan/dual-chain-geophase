@@ -1,6 +1,9 @@
 #!/usr/bin/env python3
 """
 Encode CLI: Read structured state + message, output carrier + commitments.
+
+Payload confidentiality and integrity provided by ChaCha20-Poly1305.
+Robustness to channel noise delegated to ECC (TODO: T4).
 """
 
 import sys
@@ -8,6 +11,10 @@ import json
 import base64
 import hashlib
 import zlib
+from geophase.codec import encrypt
+
+# Master key for public test (safe, no secrets)
+MASTER_KEY = b"PUBLIC_TEST_MASTER_KEY_256_BITS!"
 
 
 def H(b: bytes) -> bytes:
@@ -38,28 +45,28 @@ def main():
 
     A_t = H(H_prev + g_t + canon(public_header))
 
-    # ciphertext placeholder: in toy mode, ct = msg (no encryption)
-    # Replace with real AEAD in production.
-    ct = msg
+    # --- ChaCha20-Poly1305 authenticated encryption ---
+    # AD includes all public data to prevent tampering
+    associated_data = canon({
+        "t": t,
+        "public_header": public_header,
+        "H_prev": H_prev.hex(),
+    })
+    # Use deterministic nonce for test harness (T1 reproducibility)
+    ct = encrypt(MASTER_KEY, t, msg, associated_data, deterministic=True)
 
     H_t = H(H_prev + H(ct) + g_t)
 
-    # --- carrier placeholder: ct padded with deterministic bytes (for T1 determinism) ---
-    # In real build, replace with ECC+carrier
-    padding = H(b"PADDING" + t.to_bytes(4, "big"))
-    # Repeat padding to make up 1024 bytes
-    carrier = ct + (padding * (1024 // len(padding) + 1))[:1024]
+    # --- carrier: ciphertext padded with random bytes (ECC comes in T4) ---
+    # Ciphertext format: nonce (12) || ct || tag (16)
+    # Carrier extends to 1024 bytes for robustness testing
+    carrier = ct + (b"\x00" * (1024 - len(ct)))  # Zero-pad for now; ECC will replace
 
     out = {
         "H_t": H_t.hex(),
         "A_t": A_t.hex(),
         "carrier_b64": base64.b64encode(carrier).decode(),
         "compressed_struct_b64": base64.b64encode(compressed_struct).decode(),
-        "meta": {
-            # Optional: include ct for Shannon-Karen if you want (safe-ish in toy mode only).
-            # Remove in any real build.
-            "ct_b64": base64.b64encode(ct).decode(),
-        },
     }
     json.dump(out, sys.stdout, separators=(",", ":"))
     print()
