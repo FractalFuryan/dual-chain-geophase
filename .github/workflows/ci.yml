@@ -1,0 +1,41 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install -e .
+
+      - name: Run self-check
+        run: |
+          chmod +x ./self_check.sh
+          ./self_check.sh
+
+      - name: Run unit tests (explicit)
+        run: |
+          PYTHONPATH=src python -m pytest -q --tb=short
+
+      - name: Lint check (optional)
+        run: |
+          python -c "import geophase; print('✅ Package structure OK')"

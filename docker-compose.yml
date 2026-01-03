@@ -1,0 +1,8 @@
+services:
+  geophase:
+    build: .
+    image: dual-chain-geophase:latest
+    container_name: geophase-test
+    command: ["/app/self_check.sh"]
+    environment:
+      PYTHONPATH: /app/src
