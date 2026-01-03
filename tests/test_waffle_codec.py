@@ -12,7 +12,7 @@ Acceptance must be AEAD-gated per the covenant.
 
 import os
 import pytest
-from src.geophase.waffle_codec import (
+from geophase.waffle_codec import (
     WaffleParams,
     waffle_encode,
     waffle_decode,
