@@ -157,6 +157,43 @@ If GeoPhase fails, it fails *loudly* and *provably*.
 
 See [ECC_TUNING.md](ECC_TUNING.md) for the T4 measurement procedure and covenant-preservation proof.
 
+## Optional Transport Codecs
+
+### Waffle Boundary Encoding (Experimental)
+
+GeoPhase optionally supports a 2D "waffle" transport encoding for additional noise resilience.
+
+**Concept:**
+- Ciphertext bytes are embedded in an H×W grid (2D "waffle")
+- Reed–Solomon protection is applied to **both**:
+  - External boundary (perimeter frame)
+  - Internal seam constraints (XOR differences between adjacent cells)
+- Reconstruction uses BFS propagation from perimeter-anchored cells
+
+**Properties:**
+- Distributed noise tolerance (improves over 1D linear approaches)
+- Deterministic, transparent, fully auditable
+- No new cryptographic authority introduced
+- All reconstructed bytes **still require AEAD verification** before acceptance
+
+**Status:**
+- ✅ Optional (not default)
+- 🧪 Experimental
+- 🔒 Transport-only (never influences acceptance decisions)
+
+**Usage:**
+```python
+from src.geophase.waffle_codec import WaffleParams, waffle_encode, waffle_decode
+
+ct = ... # your AEAD ciphertext
+params = WaffleParams(H=8, W=32, nsym_ext=64, nsym_int=64)
+carrier = waffle_encode(ct, params)
+recovered, stats = waffle_decode(carrier)
+# Always verify: verify_gate(recovered, AD) before accepting
+```
+
+See [src/geophase/waffle_codec.py](src/geophase/waffle_codec.py) and tests in [tests/test_waffle_codec.py](tests/test_waffle_codec.py).
+
 ## Executive Summary
 
 > **GeoPhase** is a covenant-first transport pattern for authenticated data.

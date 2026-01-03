@@ -224,3 +224,24 @@ A: Measure T4 with/without permute(). We expect ~5–10% improvement under white
 - **Covenant:** Invariant under all NSYM values
 
 **Start at NSYM=64. Increase only if T4 shows unacceptable rejection under your noise profile.**
+
+---
+
+## Advanced: 2D Boundary Encoding (Waffle Codec)
+
+For extremely noisy channels or when distributed error tolerance is needed, GeoPhase offers an **optional** 2D boundary codec.
+
+**When to consider:**
+- White/random noise dominates over bursty corruption
+- Channel exhibits spatial correlation (e.g., inter-symbol interference)
+- You need better robustness than 1D Reed–Solomon alone
+
+**Key difference from baseline 1D:**
+- Ciphertext embedded in H×W grid
+- Perimeter (frame) + seam (internal XOR) constraints both protected
+- Reconstruction via BFS propagation (linear recovery from boundary anchors)
+
+**Important:** The covenant is **unchanged**. Waffle is transport-only, and acceptance remains AEAD-gated.
+
+See [src/geophase/waffle_codec.py](src/geophase/waffle_codec.py) for implementation and [tests/test_waffle_codec.py](tests/test_waffle_codec.py) for test suite.
+
