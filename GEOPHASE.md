@@ -41,6 +41,27 @@ No quantum assumptions. No mystical claims.
 
 "Geometry" here is engineering geometry: *data moving through noise*.
 
+## Threat Model (Scope)
+
+Assume an adversary can:
+
+- Corrupt carrier bytes (bounded noise / bit corruption)
+- Replay old carriers
+- Reorder blocks
+- Observe ciphertexts
+
+Assume an adversary cannot:
+
+- Break the AEAD primitive (ChaCha20-Poly1305)
+- Recover secret keys from the implementation environment
+- Control the entropy source (for random-nonce mode)
+
+**Security claims in this repo:**
+
+- Authenticity / integrity reduce to AEAD verification
+- Noise robustness reduces to ECC correction radius + interleaving
+- Transport layer never influences acceptance decisions
+
 ## Architecture (Dual Chain)
 
 GeoPhase uses two logically separate chains:

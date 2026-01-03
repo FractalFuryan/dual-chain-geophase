@@ -1,6 +1,14 @@
 # GeoPhase
 
+[![CI](https://github.com/FractalFuryan/dual-chain-geophase/actions/workflows/ci.yml/badge.svg)](https://github.com/FractalFuryan/dual-chain-geophase/actions/workflows/ci.yml)
+[![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
+
 **Security Covenant:** ✅ AEAD-Gated Acceptance (ECC never authorizes)
+
+> **Quick mental model**
+> - **ECC + interleaving**: helps ciphertext survive noise (transport only)
+> - **AEAD**: decides authenticity (sole acceptance gate)
+> - **Covenant**: prevents "transport success ⇒ trust" failures by construction
 
 GeoPhase is a **transport + verification pattern** for authenticated ciphertext.
 
@@ -228,6 +236,14 @@ See [ECC_TUNING.md](ECC_TUNING.md) for detailed tuning, measurement, and proof.
 - **[RELEASE_v0.2.0.md](RELEASE_v0.2.0.md)** — Release notes & feature summary
 - **[SECURITY.md](SECURITY.md)** — Security policy & covenant enforcement
 - **[MATHEMATICS.md](MATHEMATICS.md)** — Formal proofs & theorems
+
+## Auditor Checklist
+
+- Verify covenant gate: [src/geophase/covenant.py](src/geophase/covenant.py)
+- Verify CI tripwires: [tests/test_covenant_gate.py](tests/test_covenant_gate.py)
+- Verify AEAD primitive: [src/geophase/codec.py](src/geophase/codec.py)
+- Verify black-box harness: [scripts/public_test.py](scripts/public_test.py)
+- Verify tuning procedure: [ECC_TUNING.md](ECC_TUNING.md)
 
 ## License
 
