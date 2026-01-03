@@ -1,15 +1,15 @@
-# GeoPhase
+# GeoPhase Chain
 
-GeoPhase is a **transport + verification pattern** for authenticated ciphertext.
+GeoPhase Chain is a **covenant-first block-chain transport pattern** for authenticated ciphertext.
 
 It is **not** a new cryptographic primitive.
 
 ## The Problem
 
-> **How do we move authenticated ciphertext through noisy or lossy channels,
-> without letting "transport success" be mistaken for "authenticity"?**
+> **How do we move authenticated ciphertext through noisy or lossy channels
+> across a block chain, without letting "transport success" be mistaken for "authenticity"?**
 
-GeoPhase solves this by separating:
+GeoPhase Chain solves this by separating:
 
 - **Truth** (cryptographic authorization via AEAD)
 - **Survivability** (geometric/transport robustness via ECC + interleaving)
@@ -18,7 +18,7 @@ This separation prevents a class of real-world failures where error correction o
 
 ## The Core Covenant
 
-> **ACCEPT ⇔ AEAD_verify(ciphertext, AD) = true**
+> **ACCEPT(block t) ⇔ AEAD_verify(ciphertext, AD_t) = true**
 
 Everything else in the system exists to help ciphertext *arrive intact* — never to help it *be believed*.
 

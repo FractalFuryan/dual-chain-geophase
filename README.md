@@ -1,31 +1,46 @@
-# GeoPhase
+# GeoPhase Chain
 
 [![CI](https://github.com/FractalFuryan/dual-chain-geophase/actions/workflows/ci.yml/badge.svg)](https://github.com/FractalFuryan/dual-chain-geophase/actions/workflows/ci.yml)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 
-**Security Covenant:** ✅ AEAD-Gated Acceptance (ECC never authorizes)
+**Security Covenant:** ✅ AEAD-Gated Acceptance  
+*(ECC never authorizes — blockchain acceptance is cryptographic only)*
 
-> **Quick mental model**
-> - **ECC + interleaving**: helps ciphertext survive noise (transport only)
-> - **AEAD**: decides authenticity (sole acceptance gate)
-> - **Covenant**: prevents "transport success ⇒ trust" failures by construction
+---
 
-GeoPhase is a **transport + verification pattern** for authenticated ciphertext.
+## Quick mental model
+
+- **ECC + interleaving** → helps ciphertext survive noise *(transport only)*
+- **AEAD** → decides authenticity *(sole acceptance gate)*
+- **Chain index (t)** → binds blocks into an ordered, replay-safe sequence
+- **Covenant** → prevents "transport success ⇒ trust" failures by construction
+
+GeoPhase Chain is a **block-indexed transport + verification pattern** for authenticated ciphertext.
 
 It answers one engineering question:
 
 > **How do we move authenticated ciphertext through noisy/lossy channels
-> without letting "transport success" be mistaken for "authenticity"?**
+> across a block chain, without letting "transport success" be mistaken for "authenticity"?**
 
-GeoPhase solves this by **separating cryptographic trust (AEAD) from geometric robustness (ECC + interleaving)**.
+GeoPhase Chain solves this by **separating cryptographic trust (AEAD) from geometric robustness (ECC + interleaving)**.
 
 📖 **Read [GEOPHASE.md](GEOPHASE.md) for the full conceptual model.**
 
 ---
 
+## What This Is (And Isn't)
+
+GeoPhase Chain is **not a blockchain protocol or consensus system**.
+
+It is a **block-chain pattern**: messages are indexed, hash-linked, and cryptographically bound to their position (`t`) in a chain.
+
+**Consensus, networking, and storage are intentionally out of scope.**
+
+---
+
 ## The Covenant (One Rule That Matters)
 
-> **ACCEPT ⇔ AEAD_verify(ciphertext, AD) = true**
+> **ACCEPT(block t) ⇔ AEAD_verify(ciphertext, AD_t) = true**
 
 Error correction is transport-only. It may repair bytes, but it never decides validity.
 

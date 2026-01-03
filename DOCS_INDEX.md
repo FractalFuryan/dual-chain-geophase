@@ -1,6 +1,6 @@
 # Documentation Index
 
-Quick navigation to GeoPhase documentation by topic and audience.
+Quick navigation to GeoPhase Chain documentation by topic and audience.
 
 ## Starting Here
 
