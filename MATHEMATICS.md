@@ -154,4 +154,16 @@ Transport coding choices (Reed–Solomon, LDPC, Turbo, interleaving) may change 
 
 ---
 
+## Appendix: Harmonic Interpretation (Scalar Waze)
+
+An optional interpretive framework exploring harmonic ratios, discrete symmetry,
+and curvature modulation is provided in:
+
+- [docs/APPENDIX_SCALAR_WAZE_UNIFIED.md](docs/APPENDIX_SCALAR_WAZE_UNIFIED.md)
+
+This appendix is **not normative** and does not participate in any security,
+verification, or acceptance logic.
+
+---
+
 For more details on integration with the test harness, see [README.md](README.md).
