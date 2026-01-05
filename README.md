@@ -204,24 +204,33 @@ For detailed treatment, see [GEOPHASE.md](GEOPHASE.md) and [MATHEMATICS.md](MATH
 
 ## Current Status
 
-✅ **v0.2.0 (Covenant + ECC Integrated)**
+✅ **v0.2.0 (Covenant + ECC Integrated + Dual Geo Phase Audit)**
 
 - [x] AEAD encryption (ChaCha20-Poly1305)
 - [x] Reed–Solomon ECC with deterministic interleaving
 - [x] Covenant enforcement (immutable gate + CI tests)
+- [x] Dual Geo Phase structural audit (28 tests, batch + strict checks)
 - [x] T1–T4 black-box verification harness
 - [x] Deterministic + HKDF KDF modes (feature-flagged)
-- [x] Complete documentation (tuning guide, release notes)
+- [x] Complete documentation (tuning guide, release notes, audit guide)
 
-**All tests passing:** 20/20 (including both KDF modes)  
-**Covenant preserved:** 5 non-regression tripwires, all green
+**All tests passing:** 67/67 (28 dual-phase + 39 core/transport tests)  
+**Covenant preserved:** 5 non-regression tripwires, all green  
+**Angular distance audit:** Dual phases decorrelated (cosine < 0.95, 95% pass rate)
 
 ## Testing
 
-Run smoke tests:
+Run all tests (67 total):
 ```bash
 python -m pytest tests/ -v
 ```
+
+Run just dual-phase audit (28 tests):
+```bash
+python -m pytest tests/test_dual_phase_distance.py -v
+```
+
+See [DUAL_GEO_PHASE.md](DUAL_GEO_PHASE.md) for audit methodology and results.
 
 ## Transport Tuning
 

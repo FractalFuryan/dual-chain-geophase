@@ -12,8 +12,10 @@ Quick navigation to GeoPhase Chain documentation by topic and audience.
 1. **[SECURITY.md](SECURITY.md)** — Covenant rule, non-claims, disclosure policy
 2. **[MATHEMATICS.md](MATHEMATICS.md)** — Formal theorem, proof sketch, acceptance gate definition
 3. **[GEOPHASE.md](GEOPHASE.md#threat-model-scope)** — Threat model & assumptions
-4. **[src/geophase/covenant.py](src/geophase/covenant.py)** — Acceptance gate implementation
-5. **[tests/test_covenant_gate.py](tests/test_covenant_gate.py)** — CI non-regression tripwires
+4. **[DUAL_GEO_PHASE.md](DUAL_GEO_PHASE.md)** — Angular distance audit, decorrelation proof
+5. **[src/geophase/covenant.py](src/geophase/covenant.py)** — Acceptance gate implementation
+6. **[tests/test_covenant_gate.py](tests/test_covenant_gate.py)** — CI non-regression tripwires
+7. **[tests/test_dual_phase_distance.py](tests/test_dual_phase_distance.py)** — Structural independence audit (28 tests)
 
 ## For Implementers & Integrators
 
@@ -35,6 +37,7 @@ Quick navigation to GeoPhase Chain documentation by topic and audience.
 | GEOPHASE.md | Concept + covenant | Architects, auditors |
 | SECURITY.md | Security model + disclosure | Auditors |
 | MATHEMATICS.md | Formal foundations | Auditors, cryptographers |
+| DUAL_GEO_PHASE.md | Angular distance audit + decorrelation | Auditors, architects |
 | ECC_TUNING.md | Noise robustness + T4 | Implementers, operators |
 | QUICKSTART.md | Setup guide | Developers |
 | RELEASE_v0.2.0.md | Release notes + blog | Product teams |
