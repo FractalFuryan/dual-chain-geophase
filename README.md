@@ -108,6 +108,73 @@ This checks:
 ./self_check.sh
 ```
 
+---
+
+## Enhanced Hybrid Chaotic State Mixer (v2)
+
+**New in v0.2.0:** A production-grade non-autonomous nonlinear state mixer with entropy-gated teleportation.
+
+### What It Does
+
+The mixer (`mixer.py`) implements a **structured unpredictable transition** for scalars in cryptographic protocols:
+
+- **Deterministic ancilla chains** (seed + step index)
+- **Dual-phase drift** (primary + secondary orthogonal mixers)
+- **Stateless teleport probability** (entropy-aware, no memory)
+- **Optional CSPRNG augmentation** (reproducible by default, irreversible on demand)
+
+### Key Features
+
+✅ **Bounded:** All operations mod $n$ (no divergence)  
+✅ **Chaotic locally:** Nonlinear drift + XOR mixing  
+✅ **Escape trap states:** Stochastic teleportation breaks resonance  
+✅ **Auditable:** Fully deterministic when randomness is disabled  
+✅ **No learning:** Pure function, no state, no adaptation  
+
+### Quick Integration
+
+```python
+from geophase.mixer import enhanced_F_k_v2, ancilla16
+
+# Deterministic mixer (reproducible)
+k_next = enhanced_F_k_v2(
+    k=12345, t=0, seed=b"my_seed_32bytes!",
+    dk=1, alpha=1000, gamma=100, c=42, n=(1<<64), r=10,
+    redshift=lambda r: r // 10,
+    J=lambda k: hash(k),
+    sign=lambda x: 1 if x >= 0 else -1,
+    teleport_share=my_teleport_fn,
+    use_real_rng=False,  # Deterministic by default
+)
+```
+
+**Full documentation:** [MATHEMATICS.md](MATHEMATICS.md) Section 9  
+**Tests:** `tests/test_mixer.py` (22 tests, all passing)
+
+---
+
+## Halo2 Multi-Step Teleport Circuit
+
+**New in v0.2.0:** ZK circuit proof system for multi-step scalar transitions.
+
+Proves a chain of deterministic mixing steps in Halo2:
+
+$$Q_0 \to Q_1 \to \cdots \to Q_m \text{ where } Q_i = k_i \cdot G$$
+
+**Key constraints:**
+- Limb decomposition (16×16-bit representation)
+- U16 matrix multiply (mod $2^{16}$ per limb)
+- Ancilla XOR (deterministic routing)
+- Recomposition and EC scalar mul
+- Final point equality
+
+**Complexity:** ~900 rows per step, $O(m)$ total scaling
+
+**Implementation:** `src/geophase/halo2_circuit.py`  
+**Tests:** `tests/test_halo2_circuit.py` (23 tests, all passing)
+
+---
+
 ## Security Model
 
 **Confidentiality and integrity** reduce to **standard AEAD** (placeholder: plaintext transport in harness; real build uses authenticated encryption).
@@ -121,6 +188,7 @@ dual-chain-geophase/
 ├─ README.md                           # This file
 ├─ LICENSE                             # MIT License
 ├─ SECURITY.md                         # Security policy & reporting
+├─ MATHEMATICS.md                      # Mathematical foundations (Sections 1–9)
 ├─ .gitignore                          # Git exclusions
 ├─ pyproject.toml                      # Python project config
 ├─ requirements.txt                    # Dependencies
@@ -134,9 +202,22 @@ dual-chain-geophase/
 │  ├─ codec.py                         # ECC + carrier (placeholder)
 │  ├─ chain.py                         # H_t, A_t, commitment logic
 │  ├─ compress.py                      # 3–6–9 structured compression
-│  └─ util.py                          # Canonical JSON, b64 helpers
+│  ├─ covenant.py                      # AEAD verification (sole acceptance gate)
+│  ├─ mixer.py                         # Enhanced hybrid chaotic state mixer (v2) ⭐ NEW
+│  ├─ halo2_circuit.py                 # Multi-step teleport ZK circuit ⭐ NEW
+│  ├─ param_vectors.py                 # Dual-phase parameter vectors
+│  ├─ util.py                          # Canonical JSON, b64 helpers
+│  ├─ dual_phase.py                    # Audit-only angular distance
+│  └─ __pycache__/
 └─ tests/
-   └─ test_smoke.py                    # Smoke tests
+   ├─ test_smoke.py                    # Smoke tests
+   ├─ test_covenant_gate.py             # AEAD covenant tests
+   ├─ test_dual_phase_distance.py      # Parameter orthogonality tests
+   ├─ test_ecc_blackbox.py             # ECC black-box tests
+   ├─ test_mixer.py                    # Mixer unit tests ⭐ NEW
+   ├─ test_halo2_circuit.py            # Halo2 circuit tests ⭐ NEW
+   ├─ test_waffle_codec.py             # Carrier codec tests
+   └─ __pycache__/
 ```
 
 ## Test Harness (T1–T4)

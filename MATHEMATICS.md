@@ -146,11 +146,159 @@ Transport coding choices (Reed–Solomon, LDPC, Turbo, interleaving) may change 
 
 ---
 
+## 9. Enhanced Hybrid Chaotic State Mixer (v2)
+
+### Overview
+
+The mixer implements a **non-autonomous, nonlinear modular map with entropy-gated nonlocal transitions**. It serves as a structured, unpredictable state transition function designed to:
+
+- Maintain bounded chaos (mod $n$ confinement)
+- Escape phase traps via randomized teleportation
+- Preserve auditability and reproducibility
+- Resist statistical bias without external randomness
+
+### Formal Definition
+
+Let $k_t \in \mathbb{Z}_n$ be the scalar state at step $t$.
+
+The transition is:
+$$k_{t+1} = \begin{cases}
+(k_t + \Delta_{\text{local}}(k_t, t) + c) \bmod n & \text{if } b_t = 0 \\
+\text{teleport\_share}(k_t, s_t, \mathcal{G}) \bmod n & \text{if } b_t = 1
+\end{cases}$$
+
+where:
+
+- **Local drift:**
+$$\Delta_{\text{local}}(k_t, t) := \Delta_j + \Delta_b + \Delta_{j4}$$
+
+  - $\Delta_j := \alpha \cdot J(k_t) \cdot (1+z_r) \cdot \text{sign}(J(k_t))$ (primary nonlinear drift)
+  - $\Delta_b := \alpha_2 \cdot J_b(k_t) \cdot (1+z_r)$ (secondary orthogonal drift)
+  - $\Delta_{j4} := \gamma \cdot J(k_t)^3 \cdot (1+z_r)$ (cubic amplification)
+
+- **Redshift modulation:**
+$$z_r := \text{redshift}(r) \quad \text{(context-dependent scaling)}$$
+
+- **Teleport selector:**
+$$b_t := \begin{cases}
+1 & \text{if } \text{ancilla}_{16}(t) / U16 < p_{\text{tp}}(k_t) \\
+0 & \text{otherwise}
+\end{cases}$$
+where $U16 := 2^{16} = 65536$.
+
+- **Teleport probability (entropy-gated):**
+$$p_{\text{tp}}(k_t) := \min\left(\max(p_0 + \beta(1 - H(k_t)), p_{\min}), p_{\max}\right)$$
+
+  where $H(k_t) \in [0,1]$ is a stateless entropy proxy based on bit balance:
+  $$H(k_t) := 4 p (1-p), \quad p := \frac{\text{popcount}(k_t \bmod 2^{32})}{32}$$
+
+### Key Properties
+
+#### 1. **Boundedness**
+Since all operations are congruent modulo $n$, divergence is strictly confined:
+$$k_t \in [0, n) \quad \forall t$$
+
+#### 2. **Local Chaos (Lyapunov Growth)**
+The polynomial drift terms $\Delta_j + \Delta_{j4}$ induce:
+- Nonlinear, state-dependent step sizes
+- Local bit spread via XOR and mixing gates
+- Positive Lyapunov exponent in local dynamics (locally)
+
+However, modular confinement prevents unbounded explosion.
+
+#### 3. **Nonlocal Escape (Teleportation)**
+The selector bit $b_t$ enables occasional long-range jumps, guaranteeing:
+- Escape from periodic cycles and resonance traps
+- Global ergodicity (with probability 1 over infinite chains)
+- No stationary distribution (system is non-autonomous)
+
+#### 4. **Statestateless Routing**
+Teleport selection depends only on:
+- Current scalar $k_t$
+- Deterministic ancilla $\text{ancilla}_{16}(t) := \text{SHA256}(\text{seed} \| t)[0:2]$
+- No memory, no profiling, no learning
+
+This makes the system **fully auditable and reproducible** when CSPRNG is disabled.
+
+#### 5. **Entropy Adaptation (Without State)**
+The entropy proxy $H(k_t)$ is derived deterministically from bit counts, not history. When local bits appear "too uniform" (high $H$), teleport probability *decreases*; when they appear "too biased" (low $H$), it *increases*. This provides **self-regulating diversity** without maintaining explicit state.
+
+### Implementation Details
+
+#### Deterministic Ancilla
+$$\text{ancilla}_{16}(t) := \text{int.from\_bytes}(\text{SHA256}(\text{seed} \| t \| \text{"anc"})[0:2], \text{big})$$
+
+This produces a 16-bit token reproducible for any $(t, \text{seed})$ pair.
+
+#### Hybrid Mode (Optional CSPRNG)
+To add cryptographic unpredictability while preserving reproducibility:
+$$\text{ancilla}_{16}^{\text{hybrid}}(t) := \text{ancilla}_{16}(t) \oplus \text{os.urandom}(2)$$
+(conditional on an explicit flag; default is deterministic mode)
+
+#### Drift Functions
+- **Primary:** $J(k) := \text{SHA256}(k)[0:8]$ (or curve-dependent parameter)
+- **Secondary:** $J_b(k) := \text{mix64}(k \oplus \text{const})$ (orthogonal to $J$)
+
+Both are stateless and deterministic.
+
+### Why Not a PRNG?
+
+The mixer is **not** suitable as a standalone pseudorandom number generator:
+
+- No proven statistical uniformity over all output bits
+- Output is correlated with input (intentionally)
+- No backtracking resistance guarantees
+- Designed for *state mixing*, not randomness generation
+
+It is, however, suitable for:
+- Nonlinear state transitions in iterative protocols
+- Mixing scalars in scalar-based hash chains
+- Preventing convergence in parametric searches
+- Carrier mixing in teleport-based EC protocols
+
+### Auditability and Security
+
+#### No Learning
+The transition function has **no adjustable parameters** (beyond fixed constants) and **no feedback mechanisms**. Each step is deterministic in isolation.
+
+#### No Optimization Objective
+There is no fitness function, loss term, or objective to optimize. The system does not converge to any goal state.
+
+#### Reproducibility
+For reproducible audits: set `use_real_rng=False`. The entire transition sequence is deterministic under seed and step index.
+
+#### Irreversibility
+For forward unpredictability: set `use_real_rng=True` to augment ancilla with OS CSPRNG. This maintains determinism in local drift but randomizes teleport routing.
+
+### Complexity
+
+Per step (scalar mod $n$):
+- Limb decomposition (U16): ~16 operations
+- Matrix multiply (U16): ~256 field operations
+- Ancilla generation: 1 SHA256 hash
+- Entropy proxy: ~32 bit operations
+- Teleport decision: 1 comparison
+
+**Total:** $O(1)$ per step, negligible in most contexts.
+
+In ZK circuits (Halo2):
+- Limb decomposition: ~16 rows (range checks)
+- U16 mix: ~32 rows (field arithmetic)
+- XOR lookup: ~1 row (lookup table)
+- Recomposition: ~16 rows (field arithmetic)
+- EC mul: ~800–1200 rows (dominant)
+- **Per-step total:** ~900–1500 rows
+
+For $m$ steps: $O(m \cdot 900)$ rows; e.g., $m=8 \Rightarrow 7200$ rows.
+
+---
+
 ## References
 
 - Goldreich, O. (2001). *Foundations of Cryptography*.
 - Forney, G. D. (1966). *Concatenated Codes*.
 - Shannon, C. E. (1948). *A Mathematical Theory of Communication*.
+- Sprott, J. C. (2003). *Chaos and Time-Series Analysis*. (reference for chaotic maps)
 
 ---
 
