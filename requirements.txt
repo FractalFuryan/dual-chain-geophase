@@ -1,3 +1,4 @@
 cryptography>=42.0
 reedsolo>=1.7
+ecdsa>=0.18
 pytest>=8.0
