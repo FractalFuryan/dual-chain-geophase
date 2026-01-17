@@ -3,12 +3,14 @@
 [![CI](https://github.com/FractalFuryan/dual-chain-geophase/actions/workflows/ci.yml/badge.svg)](https://github.com/FractalFuryan/dual-chain-geophase/actions/workflows/ci.yml)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 
+> **A cryptographic reference system for authenticated transport and verifiable state mixing, with optional privacy-preserving on-chain anchoring — not a blockchain or network protocol.**
+
 **Last Updated:** January 16, 2026
 
 **Security Covenant:** ✅ AEAD-Gated Acceptance  
 *(ECC never authorizes — blockchain acceptance is cryptographic only)*
 
-**NEW:** ⛓️ **Ethereum Bridge (Base L2)** - Privacy-safe on-chain attestation & revocation  
+**NEW:** ⛓️ **Ethereum Anchoring (Base L2)** - Privacy-safe on-chain attestation & revocation  
 [Quick Start →](ETH-BRIDGE-README.md)
 
 ---
@@ -28,14 +30,119 @@ It answers one engineering question:
 > across a block chain, without letting "transport success" be mistaken for "authenticity"?**
 
 GeoPhase Chain solves this by **separating cryptographic trust (AEAD) from geometric robustness (ECC + interleaving)**.
-Ethereum Bridge:** Privacy-safe on-chain attestation on Base L2  
-  ([ETH-BRIDGE-README.md](ETH-BRIDGE-README.md))  
-  *Commitment-only provenance + revocation registry*
 
-- **
 📖 **Read [GEOPHASE.md](GEOPHASE.md) for the full conceptual model.**
 
+---
+
+## Project Status, Scope, and Maturity
+
+**GeoPhase / Dual-Chain GeoPhase** is a **cryptographic design pattern and reference implementation**, not a blockchain, consensus system, or general-purpose network protocol.
+
+The project focuses on:
+
+* Authenticated encrypted transport over unreliable / noisy channels
+* Strict separation between **transport robustness** and **cryptographic acceptance**
+* Verifiable state-mixing and path proofs (optional, via ZK circuits)
+* Privacy-preserving provenance and revocation anchoring (via Ethereum / Base L2)
+
+It does **not** implement:
+
+* A blockchain
+* A consensus algorithm
+* A data-availability layer
+* A value-transfer or cross-chain bridge
+
+---
+
+## One-Rule Covenant (Non-Negotiable)
+
+> **ACCEPT(block t)** ⇔ **AEAD_verify(ciphertext, associated_data including t) == true**
+
+Error correction may recover bytes, but **only cryptographic authentication determines acceptance**.
+
+This rule is enforced structurally in code and CI.
+
+---
+
+## Maturity Level (Honest Assessment)
+
+| Component | Status |
+|-----------|--------|
+| Core crypto pattern & covenant | 🟢 Implemented & tested |
+| Transport robustness (RS ECC + interleaving) | 🟢 Implemented |
+| Chaotic state mixer | 🟢 Implemented & tested |
+| Halo2 ZK circuits (multi-step proofs) | 🟢 Reference-grade implementation |
+| Dual-phase orthogonality audits | 🟢 Implemented (statistical tests) |
+| CLI tools | 🟢 Reference implementations |
+| Ethereum / Base L2 anchoring layer | 🟡 Implemented & tested; public deployment pending verification |
+
+🟢 = production-grade reference  
+🟡 = deployment-ready, pending public address verification
+
+---
+
+## Ethereum / Base L2 Integration (Clarification)
+
+The Ethereum component is **not a cross-chain bridge** and **does not transport data or value**.
+
+It functions as a **control-plane anchoring layer** providing:
+
+* Commitment-only attestations (hashes only)
+* User-controlled revocation
+* Immutable ethics anchors
+* Optional EIP-712 procedural authorization
+
+**On-chain, the system stores only:**
+
+* Cryptographic commitments
+* Policy identifiers
+* Version numbers
+* Timestamps
+* Revocation flags
+
+**Never on-chain:**
+
+* Payloads
+* Ciphertext or plaintext
+* Identities
+* Likeness or biometric data
+* Behavioral metrics
+
+Smart contracts and SDKs are implemented and tested.  
+Public deployment addresses are intentionally published only at production rollout.
+
+---
+
+## Cryptographic Posture
+
+This project:
+
+* Relies exclusively on standard, well-reviewed primitives (ChaCha20-Poly1305, HKDF, Reed–Solomon)
+* Introduces **no new cryptographic assumptions**
+* Does **not** claim PRNG or secrecy guarantees from chaotic components
+* Treats chaotic mixing strictly as **state diversification**, not security
+
+All acceptance and security guarantees derive solely from AEAD verification.
+
+---
+
+## Design Philosophy (Plain English)
+
+* Transport success ≠ cryptographic success
+* Procedural variation ≠ personalization
+* Interpretation ≠ identity
+* Proven constraints > hidden policy
+
+The system prioritizes **auditability, safety, and correctness over novelty or hype**.
+
+---
+
 ### Documentation
+
+- **Ethereum Anchoring:** Privacy-safe on-chain attestation on Base L2  
+  ([ETH-BRIDGE-README.md](ETH-BRIDGE-README.md))  
+  *Commitment-only provenance + revocation registry*
 
 - **Scalar Waze Appendix (optional):** Harmonic and discrete-symmetry interpretation  
   ([docs/APPENDIX_SCALAR_WAZE_UNIFIED.md](docs/APPENDIX_SCALAR_WAZE_UNIFIED.md))  
