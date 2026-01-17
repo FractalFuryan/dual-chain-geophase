@@ -2,6 +2,7 @@ __pycache__/
 *.pyc
 .venv/
 .env
+.env.*
 *.key
 *.pem
 *.bin
@@ -12,3 +13,23 @@ build/
 .DS_Store
 *.swp
 *.swo
+
+# Foundry / Ethereum
+out/
+cache/
+broadcast/
+lib/
+*.sol.json
+
+# Proprietary components (IP protection)
+*.pt
+*.wasm
+*.secret
+*.credentials
+circuits/build/
+circuits/optimized/
+living-cipher/
+/proprietary/
+/internal/
+.secrets/
+keys/

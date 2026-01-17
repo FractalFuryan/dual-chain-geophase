@@ -3,8 +3,13 @@
 [![CI](https://github.com/FractalFuryan/dual-chain-geophase/actions/workflows/ci.yml/badge.svg)](https://github.com/FractalFuryan/dual-chain-geophase/actions/workflows/ci.yml)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 
+**Last Updated:** January 16, 2026
+
 **Security Covenant:** ✅ AEAD-Gated Acceptance  
 *(ECC never authorizes — blockchain acceptance is cryptographic only)*
+
+**NEW:** ⛓️ **Ethereum Bridge (Base L2)** - Privacy-safe on-chain attestation & revocation  
+[Quick Start →](ETH-BRIDGE-README.md)
 
 ---
 
@@ -23,7 +28,11 @@ It answers one engineering question:
 > across a block chain, without letting "transport success" be mistaken for "authenticity"?**
 
 GeoPhase Chain solves this by **separating cryptographic trust (AEAD) from geometric robustness (ECC + interleaving)**.
+Ethereum Bridge:** Privacy-safe on-chain attestation on Base L2  
+  ([ETH-BRIDGE-README.md](ETH-BRIDGE-README.md))  
+  *Commitment-only provenance + revocation registry*
 
+- **
 📖 **Read [GEOPHASE.md](GEOPHASE.md) for the full conceptual model.**
 
 ### Documentation
@@ -41,6 +50,80 @@ GeoPhase Chain is **not a blockchain protocol or consensus system**.
 It is a **block-chain pattern**: messages are indexed, hash-linked, and cryptographically bound to their position (`t`) in a chain.
 
 **Consensus, networking, and storage are intentionally out of scope.**
+
+---
+
+## System Architecture & Trust Boundary
+
+### High-Level Flow
+
+```
+┌─────────┐
+│  User   │
+└────┬────┘
+     │
+     │  (seed / token / mode)
+     ▼
+┌───────────────────────┐
+│   GeoPhase Engine     │   ← Proprietary (Living Cipher)
+│   (off-chain)         │
+│                       │
+│ • Geometry-only math  │
+│ • No ML               │
+│ • No memory           │
+│ • No personalization  │
+└────┬──────────────────┘
+     │
+     │  geoCommit (hash)
+     ▼
+┌───────────────────────┐
+│  Ethereum (Base L2)   │   ← Public / Auditable
+│                       │
+│ • Attestation         │
+│ • Revocation          │
+│ • Ethics anchor       │
+│ • No media            │
+│ • No identity data    │
+└────┬──────────────────┘
+     │
+     │  allow / deny
+     ▼
+┌───────────────────────┐
+│   API Gate            │   ← Open (Trust Layer)
+│                       │
+│ • Fail-closed checks  │
+│ • Bytecode lock       │
+│ • Revocation enforce  │
+└────┬──────────────────┘
+     │
+     ▼
+┌───────────────────────┐
+│   Output              │
+│                       │
+│ • Abstract            │
+│ • Non-stored          │
+│ • Non-replayable      │
+└───────────────────────┘
+```
+
+### Trust Boundary Clarification
+
+| Layer              | Visibility      | Purpose                 |
+| ------------------ | --------------- | ----------------------- |
+| Smart contracts    | Public          | Provenance & revocation |
+| Ethics anchors     | Public          | Immutable guarantees    |
+| API gates          | Public          | Enforcement & audit     |
+| GeoPhase internals | **Proprietary** | Execution & safety      |
+| Generated media    | Ephemeral       | Never stored            |
+
+### Important Note on Proprietary Components
+
+> **This project intentionally separates verifiable guarantees from implementation logic.**
+>
+> All safety, privacy, and ethics constraints are publicly auditable.  
+> Internal execution details are proprietary to prevent misuse and unsafe replication.
+>
+> See: [PROPRIETARY-NOTICE.md](PROPRIETARY-NOTICE.md) | [docs/REGULATOR-QA.md](docs/REGULATOR-QA.md)
 
 ---
 
@@ -185,15 +268,42 @@ $$Q_0 \to Q_1 \to \cdots \to Q_m \text{ where } Q_i = k_i \cdot G$$
 
 ```
 dual-chain-geophase/
-├─ README.md                           # This file
-├─ LICENSE                             # MIT License
-├─ SECURITY.md                         # Security policy & reporting
-├─ MATHEMATICS.md                      # Mathematical foundations (Sections 1–9)
+├─ ETH-BRIDGE-README.md                # Ethereum bridge quick start ⭐ NEW
+├─ ETH-BRIDGE-SHIPPED.md               # Deployment status ⭐ NEW
 ├─ .gitignore                          # Git exclusions
 ├─ pyproject.toml                      # Python project config
-├─ requirements.txt                    # Dependencies
+├─ requirements.txt                    # Dependencies (includes web3.py)
+├─ foundry.toml                        # Foundry config (Solidity) ⭐ NEW
+├─ deploy.sh                           # Contract deployment script ⭐ NEW
+├─ contracts/                          # ⭐ NEW
+│  ├─ AnankeAttestationRegistry.sol    # On-chain provenance (commitment-only)
+│  └─ AnankeRevocationRegistry.sol     # User-controlled revocation
+├─ script/                             # ⭐ NEW
+│  └─ Deploy.s.sol                     # Foundry deployment script
 ├─ scripts/
 │  ├─ public_test.py                   # Black-box test harness
+│  ├─ encode_blackbox.py               # Encode CLI (structured state → carrier)
+│  ├─ halo2_circuit.py                 # Multi-step teleport ZK circuit
+│  ├─ param_vectors.py                 # Dual-phase parameter vectors
+│  ├─ util.py                          # Canonical JSON, b64 helpers
+│  ├─ dual_phase.py                    # Audit-only angular distance
+│  ├─ eth/                             # ⭐ NEW: Ethereum bridge SDK
+│  │  ├─ __init__.py                   # Clean API exports
+│  │  ├─ geocommit.py                  # Commitment computation
+│  │  ├─ eip712_verify.py              # EIP-712 signature verification
+│  │  ├─ chain_check.py                # On-chain reads/writes (web3.py)
+│  │  └─ fastapi_middleware.py         # Pre-generation revocation gate
+│  └─ __pycache__/
+   ├─ test_halo2_circuit.py            # Halo2 circuit tests
+   ├─ test_waffle_codec.py             # Carrier codec tests
+   ├─ test_eth_integration.py          # Ethereum bridge tests ⭐ NEWx
+│  └─ eth/                             # ⭐ NEW: Ethereum bridge docs
+│     ├─ GEO-COMMIT-SPEC.md            # Commitment format specification
+│     ├─ EIP712-PROCEDURAL-AUTH.md     # Signature protocol
+│     ├─ THREAT-MODEL-ETH.md           # Security analysis
+│     ├─ DEPLOYMENT.md                 # Deployment guide
+│     ├─ QUICK-REFERENCE.md            # Developer cheat sheet
+│     └─ ETH-INTEGRATION-SUMMARY.md    # Complete overviewpy                   # Black-box test harness
 │  ├─ encode_blackbox.py               # Encode CLI (structured state → carrier)
 │  ├─ verify_blackbox.py               # Verify CLI (correct key)
 │  └─ verify_blackbox_wrongkey.py      # Verify CLI (wrong key, always rejects)
@@ -254,19 +364,31 @@ carrier bytes
   → ACCEPT + recover M   OR   REJECT
 ```
 
-**Key invariant:** ECC can corrupt, fail to recover, or succeed.  
-Only AEAD decides which outcome is valid. Transport noise cannot leak into trust decisions.
+**Key invar+ Ethereum Bridge (January 16, 2026)**
 
----
+**Core Protocol:**
+- [x] AEAD encryption (ChaCha20-Poly1305)
+- [x] Reed–Solomon ECC with deterministic interleaving
+- [x] Covenant enforcement (immutable gate + CI tests)
+- [x] Dual Geo Phase structural audit (28 tests, batch + strict checks)
+- [x] T1–T4 black-box verification harness
+- [x] Deterministic + HKDF KDF modes (feature-flagged)
+- [x] Complete documentation (tuning guide, release notes, audit guide)
 
-## Architecture
+**Ethereum Bridge (Base L2):**
+- [x] Attestation + Revocation smart contracts (Solidity 0.8.20)
+- [x] Python SDK (web3.py integration)
+- [x] Commitment-only privacy (no user data on-chain)
+- [x] FastAPI middleware (pre-generation revocation gate)
+- [x] EIP-712 procedural authorization
+- [x] Comprehensive documentation + threat model
+- [x] Integration tests (all passing)
 
-### Dual Chains
-
-#### Message Chain (Trust)
-- AEAD-protected payloads (ChaCha20-Poly1305)
-- Acceptance gated exclusively by AEAD verification
-- Immutable security boundary
+**Test Results:**
+- **Core tests:** 67/67 passing (28 dual-phase + 39 core/transport)
+- **Ethereum tests:** 6/6 integration tests passing
+- **Covenant preserved:** 5 non-regression tripwires, all green
+- - Immutable security boundary
 
 #### Transport Chain (Robustness)
 - Reed–Solomon ECC + deterministic interleaving
@@ -299,11 +421,29 @@ For detailed treatment, see [GEOPHASE.md](GEOPHASE.md) and [MATHEMATICS.md](MATH
 **Covenant preserved:** 5 non-regression tripwires, all green  
 **Angular distance audit:** Dual phases decorrelated (cosine < 0.95, 95% pass rate)
 
-## Testing
+**Core Protocol:**
+- **[GEOPHASE.md](GEOPHASE.md)** — Conceptual model & architecture
+- **[ECC_TUNING.md](ECC_TUNING.md)** — Noise robustness tuning & T4 measurement
+- **[RELEASE_v0.2.0.md](RELEASE_v0.2.0.md)** — Release notes & feature summary
+- **[SECURITY.md](SECURITY.md)** — Security policy & covenant enforcement
+- **[MATHEMATICS.md](MATHEMATICS.md)** — Formal proofs & theorems
 
-Run all tests (67 total):
-```bash
-python -m pytest tests/ -v
+**Ethereum Bridge (Base L2):**
+**Core Protocol:**
+- Verify covenant gate: [src/geophase/covenant.py](src/geophase/covenant.py)
+- Verify CI tripwires: [tests/test_covenant_gate.py](tests/test_covenant_gate.py)
+- Verify AEAD primitive: [src/geophase/codec.py](src/geophase/codec.py)
+- Verify black-box harness: [scripts/public_test.py](scripts/public_test.py)
+- Verify tuning procedure: [ECC_TUNING.md](ECC_TUNING.md)
+
+**Ethereum Bridge:**
+- Verify smart contracts: [contracts/](contracts/)
+- Verify commitment computation: [src/geophase/eth/geocommit.py](src/geophase/eth/geocommit.py)
+- Verify privacy guarantees: [docs/eth/THREAT-MODEL-ETH.md](docs/eth/THREAT-MODEL-ETH.md)
+- Verify revocation enforcement: [src/geophase/eth/fastapi_middleware.py](src/geophase/eth/fastapi_middleware.py)
+- Verify integration tests: [scripts/test_chain_integration.py](scripts/test_chain_integration.py-ETH.md)** — Security analysis
+- **[docs/eth/DEPLOYMENT.md](docs/eth/DEPLOYMENT.md)** — Contract deployment
+- **[docs/eth/QUICK-REFERENCE.md](docs/eth/QUICK-REFERENCE.md)** — Developer cheat sheet
 ```
 
 Run just dual-phase audit (28 tests):

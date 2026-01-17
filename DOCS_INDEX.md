@@ -29,6 +29,22 @@ Quick navigation to GeoPhase Chain documentation by topic and audience.
 - **[RELEASE_v0.2.0.md](RELEASE_v0.2.0.md)** — What's new, performance, backwards compatibility
 - **[ECC_TUNING.md#monitoring-and-operations](ECC_TUNING.md#monitoring-and-operations)** — Production monitoring
 
+## Ethereum Bridge (Base L2)
+
+- **[ETH-BRIDGE-README.md](ETH-BRIDGE-README.md)** — Quick start, installation, usage
+- **[ETH-BRIDGE-V0.1.1-HARDENING.md](ETH-BRIDGE-V0.1.1-HARDENING.md)** — Infrastructure hardening summary
+- **[docs/eth/ETH-INTEGRATION-SUMMARY.md](docs/eth/ETH-INTEGRATION-SUMMARY.md)** — Complete integration guide
+- **[docs/eth/GEO-COMMIT-SPEC.md](docs/eth/GEO-COMMIT-SPEC.md)** — Commitment format specification
+- **[docs/eth/EIP712-PROCEDURAL-AUTH.md](docs/eth/EIP712-PROCEDURAL-AUTH.md)** — Signature protocol
+- **[docs/eth/THREAT-MODEL-ETH.md](docs/eth/THREAT-MODEL-ETH.md)** — Security analysis
+- **[docs/eth/DEPLOYMENT.md](docs/eth/DEPLOYMENT.md)** — Contract deployment guide
+
+## Regulatory & Legal
+
+- **[PROPRIETARY-NOTICE.md](PROPRIETARY-NOTICE.md)** — IP boundaries, trust/proprietary separation
+- **[docs/REGULATOR-QA.md](docs/REGULATOR-QA.md)** — Regulator Q&A, compliance verification
+- **[SECURITY.md](SECURITY.md)** — Security model, covenant enforcement
+
 ## Complete File Index
 
 | File | Purpose | Audience |

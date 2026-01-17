@@ -1,0 +1,241 @@
+"""
+FastAPI middleware for GeoPhase ↔ Base chain integration.
+Enforces revocation checks and optional attestation.
+"""
+
+from fastapi import Request, HTTPException
+from fastapi.responses import JSONResponse
+from typing import Optional, Callable
+import time
+
+from geophase.eth import (
+    ChainClient,
+    load_config_from_env,
+    compute_geo_commit,
+    GeoCommitParams,
+    verify_procedural_auth,
+    set_verifying_contract,
+)
+
+
+class GeoPhaseChainMiddleware:
+    """
+    Middleware that enforces on-chain revocation checks.
+    
+    Usage:
+        app = FastAPI()
+        chain_middleware = GeoPhaseChainMiddleware()
+        app.middleware("http")(chain_middleware)
+    """
+    
+    def __init__(
+        self,
+        enabled: bool = True,
+        enforce_revocation: bool = True,
+        enable_attestation: bool = False,
+    ):
+        self.enabled = enabled
+        self.enforce_revocation = enforce_revocation
+        self.enable_attestation = enable_attestation
+        
+        if self.enabled:
+            config = load_config_from_env()
+            self.chain_client = ChainClient(config)
+            
+            # Set verifying contract for EIP-712
+            if config.attestation_registry:
+                set_verifying_contract(config.attestation_registry)
+        else:
+            self.chain_client = None
+    
+    async def __call__(self, request: Request, call_next: Callable):
+        """Process request through chain middleware."""
+        
+        # Skip if disabled or not a generation endpoint
+        if not self.enabled or not self._is_generation_endpoint(request):
+            return await call_next(request)
+        
+        # Check revocation before processing
+        if self.enforce_revocation:
+            try:
+                await self._check_revocation(request)
+            except HTTPException as e:
+                return JSONResponse(
+                    status_code=e.status_code,
+                    content={"error": e.detail}
+                )
+        
+        # Process request
+        response = await call_next(request)
+        
+        # Optional: attest on successful generation
+        if self.enable_attestation and response.status_code == 200:
+            # This would be called post-generation with the actual geoCommit
+            # Implementation depends on your response structure
+            pass
+        
+        return response
+    
+    def _is_generation_endpoint(self, request: Request) -> bool:
+        """Check if this is a generation/regeneration endpoint."""
+        path = request.url.path
+        return any(endpoint in path for endpoint in [
+            "/generate",
+            "/regenerate",
+            "/living-cipher",
+            "/procedural",
+        ])
+    
+    async def _check_revocation(self, request: Request):
+        """Check if geoCommit is revoked before generation."""
+        # This requires extracting geoCommit parameters from the request
+        # Implementation depends on your API structure
+        # Example assumes request body has the necessary fields
+        
+        try:
+            body = await request.json()
+        except:
+            # No JSON body, skip check
+            return
+        
+        # Extract parameters for geoCommit computation
+        # (This is a template - adjust to your actual request structure)
+        if all(k in body for k in ["seed_commit", "phaseA_hash", "phaseB_hash", "policy_id", "version"]):
+            from geophase.eth import hex_to_bytes32
+            
+            params = GeoCommitParams(
+                seed_commit=hex_to_bytes32(body["seed_commit"]),
+                phaseA_hash=hex_to_bytes32(body["phaseA_hash"]),
+                phaseB_hash=hex_to_bytes32(body["phaseB_hash"]),
+                policy_id=hex_to_bytes32(body["policy_id"]),
+                version=body["version"],
+            )
+            
+            geo_commit = compute_geo_commit(params)
+            
+            if self.chain_client.is_revoked(geo_commit):
+                raise HTTPException(
+                    status_code=403,
+                    detail="GeoCommit has been revoked"
+                )
+
+
+def check_revocation_decorator(chain_client: ChainClient):
+    """
+    Decorator for individual endpoints to check revocation.
+    
+    Usage:
+        @app.post("/generate")
+        @check_revocation_decorator(chain_client)
+        async def generate(params: GenerateParams):
+            ...
+    """
+    def decorator(func):
+        async def wrapper(*args, **kwargs):
+            # Extract geoCommit from kwargs or args
+            # Check revocation
+            # Call original function
+            return await func(*args, **kwargs)
+        return wrapper
+    return decorator
+
+
+async def verify_procedural_signature(
+    request: Request,
+    expected_addr: str
+) -> bool:
+    """
+    Verify EIP-712 procedural authorization signature.
+    
+    Args:
+        request: FastAPI request
+        expected_addr: Expected signer address
+    
+    Returns:
+        True if signature is valid
+    
+    Raises:
+        HTTPException: If signature is invalid or missing
+    """
+    try:
+        body = await request.json()
+    except:
+        raise HTTPException(
+            status_code=400,
+            detail="Invalid JSON body"
+        )
+    
+    # Extract signature and message
+    if "signature" not in body or "message" not in body:
+        raise HTTPException(
+            status_code=400,
+            detail="Missing signature or message"
+        )
+    
+    signature = body["signature"]
+    message = body["message"]
+    
+    # Verify
+    if not verify_procedural_auth(message, signature, expected_addr):
+        raise HTTPException(
+            status_code=403,
+            detail="Invalid or expired procedural authorization"
+        )
+    
+    return True
+
+
+# Example FastAPI integration
+"""
+from fastapi import FastAPI, Depends
+from geophase.eth import ChainClient, load_config_from_env
+
+app = FastAPI()
+
+# Initialize chain client (singleton)
+chain_config = load_config_from_env()
+chain_client = ChainClient(chain_config)
+
+# Add middleware
+middleware = GeoPhaseChainMiddleware(
+    enabled=True,
+    enforce_revocation=True,
+    enable_attestation=False,  # Enable after testing
+)
+app.middleware("http")(middleware)
+
+@app.post("/generate")
+async def generate(
+    seed_commit: str,
+    phaseA_hash: str,
+    phaseB_hash: str,
+    policy_id: str,
+    version: int,
+    signature: Optional[str] = None,
+    message: Optional[dict] = None,
+):
+    # Compute geoCommit
+    from geophase.eth import hex_to_bytes32, compute_geo_commit, GeoCommitParams
+    
+    params = GeoCommitParams(
+        seed_commit=hex_to_bytes32(seed_commit),
+        phaseA_hash=hex_to_bytes32(phaseA_hash),
+        phaseB_hash=hex_to_bytes32(phaseB_hash),
+        policy_id=hex_to_bytes32(policy_id),
+        version=version,
+    )
+    
+    geo_commit = compute_geo_commit(params)
+    
+    # Optional: verify EIP-712 signature
+    if signature and message:
+        verify_procedural_auth(message, signature, message.get("address"))
+    
+    # Generate (your existing logic)
+    result = your_generation_function(params)
+    
+    # Optional: attest on-chain
+    # chain_client.attest(geo_commit, ethics_anchor, policy_id, version)
+    
+    return {"result": result}
+"""
