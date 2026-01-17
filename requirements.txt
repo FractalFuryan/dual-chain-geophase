@@ -5,4 +5,4 @@ pytest>=8.0
 # Ethereum integration (Base L2)
 web3>=6.0.0
 eth-account>=0.10.0
-eth-utils>=2.3.0
+eth-utils>=2.3.0fastapi>=0.100.0
