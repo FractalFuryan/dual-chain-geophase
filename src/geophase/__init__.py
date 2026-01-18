@@ -11,6 +11,7 @@ Modules:
   - param_vectors: Parameter vector generation for dual-phase audit
   - mixer:        Enhanced hybrid chaotic state mixer (v2)
   - halo2_circuit: Multi-step teleport proof in Halo2
+  - crypto:       Cryptographic primitives (RFC6979, ECDSA signing)
 """
 
 __version__ = "0.2.0"
@@ -33,6 +34,12 @@ from geophase.halo2_circuit import (
     TeleportProofSystem,
     proof_system_spec,
 )
+from geophase.crypto import (
+    rfc6979_generate_k_secp256k1,
+    sign_with_rfc6979,
+    verify_signature,
+    pubkey_from_privkey,
+)
 
 __all__ = [
     "VerifyResult",
@@ -51,4 +58,8 @@ __all__ = [
     "TeleportChain",
     "TeleportProofSystem",
     "proof_system_spec",
+    "rfc6979_generate_k_secp256k1",
+    "sign_with_rfc6979",
+    "verify_signature",
+    "pubkey_from_privkey",
 ]

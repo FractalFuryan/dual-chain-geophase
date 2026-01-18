@@ -1,5 +1,7 @@
 cryptography>=42.0
 reedsolo>=1.7
+ecdsa>=0.18
+pytest>=8.0
 pytest>=8.0
 
 # Ethereum/Web3 dependencies for PolicyGrant layer
