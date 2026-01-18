@@ -2,3 +2,12 @@ cryptography>=42.0
 reedsolo>=1.7
 ecdsa>=0.18
 pytest>=8.0
+pytest>=8.0
+
+# Ethereum/Web3 dependencies for PolicyGrant layer
+fastapi>=0.109.0
+pydantic>=2.0.0
+web3>=6.15.0
+eth-account>=0.11.0
+eth-utils>=2.3.0
+uvicorn>=0.27.0
