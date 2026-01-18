@@ -175,6 +175,72 @@ $$Q_0 \to Q_1 \to \cdots \to Q_m \text{ where } Q_i = k_i \cdot G$$
 
 ---
 
+## Authentication & Authorization (EIP-712 PolicyGrant)
+
+**New in v0.2.0+:** Wallet-native authentication with Base L2 revocation.
+
+**Key Features:**
+- **EIP-712 typed structured data:** Domain-scoped signature verification
+- **Rights-based authorization:** `ENCRYPT`, `DECRYPT`, `ADMIN`, `DESTROY`
+- **Base L2 on-chain revocation:** Fail-closed chain queries (503 on network errors)
+- **410 Gone enforcement:** Permanent destruction via immutable ledger
+- **FastAPI integration:** Drop-in dependency injection gates
+
+**Example Gate:**
+```python
+from geophase.eth.fastapi_gate import build_gate_dependency, GateConfig
+
+gate = build_gate_dependency(GateConfig(
+    domain_name="GeophaseVault",
+    chain_id=8453,  # Base mainnet
+    verifying_contract="0x1234...",
+    required_rights={"DECRYPT"}
+))
+
+@app.get("/decrypt")
+async def decrypt_endpoint(grant: PolicyGrant = Depends(gate)):
+    # grant.signer verified, rights checked, revocation queried
+    return {"status": "authorized"}
+```
+
+**Documentation:** [docs/EIP712_POLICY_GRANT.md](docs/EIP712_POLICY_GRANT.md)  
+**Tests:** `tests/test_policy_grant.py` (12 tests, all passing)
+
+---
+
+## Capability Destruction (Cryptographic Ledger)
+
+**New in v0.2.0+:** Irreversible cryptographic key shredding (NOT GDPR compliance).
+
+**Features:**
+- **Immutable ledger:** Append-only JSON Lines (`.jsonl`)
+- **Secure deletion:** 3× random overwrite + 1× zeros + unlink
+- **410 Gone semantics:** HTTP status for destroyed capabilities
+- **Proof hashes:** SHA256 cryptographic audit trail
+- **DestructionMethod:** `ADMIN_REQUEST`, `EXPIRY`, `REVOCATION`, `SECURITY_INCIDENT`
+
+**Workflow:**
+```python
+from geophase.storage.destruction import DestructionManager
+from geophase.ledger.ledger import Ledger
+
+# 1. Shred cryptographic key material
+result = DestructionManager.shred_key("/keys/cap123.bin")
+
+# 2. Record immutable event
+ledger = Ledger("/var/log/destruction.jsonl")
+ledger.record_destruction("cap123", "admin@example.com", "ADMIN_REQUEST")
+
+# 3. Enforce 410 Gone in API
+if ledger.is_destroyed("cap123"):
+    return Response(status_code=410)  # Permanent
+```
+
+**Documentation:** [docs/CAPABILITY_DESTRUCTION.md](docs/CAPABILITY_DESTRUCTION.md)  
+**Tests:** `tests/test_destruction.py` (18 tests, all passing)
+
+---
+
 ## Security Model
 
 **Confidentiality and integrity** reduce to **standard AEAD** (placeholder: plaintext transport in harness; real build uses authenticated encryption).
@@ -191,9 +257,10 @@ dual-chain-geophase/
 ├─ MATHEMATICS.md                      # Mathematical foundations (Sections 1–9)
 ├─ .gitignore                          # Git exclusions
 ├─ pyproject.toml                      # Python project config
-├─ requirements.txt                    # Dependencies
+├─ requirements.txt                    # Dependencies (+ fastapi, web3, eth-account)
 ├─ scripts/
 │  ├─ public_test.py                   # Black-box test harness
+│  ├─ sign_policy_grant.py             # EIP-712 client signing ⭐ NEW
 │  ├─ encode_blackbox.py               # Encode CLI (structured state → carrier)
 │  ├─ verify_blackbox.py               # Verify CLI (correct key)
 │  └─ verify_blackbox_wrongkey.py      # Verify CLI (wrong key, always rejects)
@@ -203,21 +270,40 @@ dual-chain-geophase/
 │  ├─ chain.py                         # H_t, A_t, commitment logic
 │  ├─ compress.py                      # 3–6–9 structured compression
 │  ├─ covenant.py                      # AEAD verification (sole acceptance gate)
-│  ├─ mixer.py                         # Enhanced hybrid chaotic state mixer (v2) ⭐ NEW
-│  ├─ halo2_circuit.py                 # Multi-step teleport ZK circuit ⭐ NEW
+│  ├─ mixer.py                         # Enhanced hybrid chaotic state mixer (v2)
+│  ├─ halo2_circuit.py                 # Multi-step teleport ZK circuit
 │  ├─ param_vectors.py                 # Dual-phase parameter vectors
 │  ├─ util.py                          # Canonical JSON, b64 helpers
 │  ├─ dual_phase.py                    # Audit-only angular distance
+│  ├─ eth/                             # ⭐ EIP-712 authentication layer
+│  │  ├─ policy_grant.py               # PolicyGrant model + Rights enum
+│  │  ├─ eip712_policy_grant.py        # Signature verification (secp256k1)
+│  │  ├─ well_known.py                 # Discovery metadata
+│  │  ├─ fastapi_gate.py               # Gate dependency factory
+│  │  └─ example_api.py                # Demo FastAPI application
+│  ├─ ledger/                          # ⭐ Immutable event ledger
+│  │  ├─ destruction_event.py          # CapabilityDestructionEvent model
+│  │  └─ ledger.py                     # JSON Lines append-only log
+│  ├─ storage/                         # ⭐ Cryptographic material lifecycle
+│  │  ├─ destruction.py                # Secure key shredding (3×random+zeros)
+│  │  └─ __init__.py
 │  └─ __pycache__/
-└─ tests/
-   ├─ test_smoke.py                    # Smoke tests
-   ├─ test_covenant_gate.py             # AEAD covenant tests
-   ├─ test_dual_phase_distance.py      # Parameter orthogonality tests
-   ├─ test_ecc_blackbox.py             # ECC black-box tests
-   ├─ test_mixer.py                    # Mixer unit tests ⭐ NEW
-   ├─ test_halo2_circuit.py            # Halo2 circuit tests ⭐ NEW
-   ├─ test_waffle_codec.py             # Carrier codec tests
-   └─ __pycache__/
+├─ tests/
+│  ├─ test_smoke.py                    # Smoke tests
+│  ├─ test_covenant_gate.py            # AEAD covenant tests
+│  ├─ test_dual_phase_distance.py      # Parameter orthogonality tests
+│  ├─ test_ecc_blackbox.py             # ECC black-box tests
+│  ├─ test_mixer.py                    # Mixer unit tests
+│  ├─ test_halo2_circuit.py            # Halo2 circuit tests
+│  ├─ test_waffle_codec.py             # Carrier codec tests
+│  ├─ test_policy_grant.py             # ⭐ EIP-712 authentication tests
+│  ├─ test_destruction.py              # ⭐ Destruction layer tests
+│  └─ __pycache__/
+└─ docs/
+   ├─ EIP712_POLICY_GRANT.md           # ⭐ Authentication guide
+   ├─ CAPABILITY_DESTRUCTION.md        # ⭐ Destruction guide
+   ├─ INTEGRATION_QUICKSTART.md        # ⭐ FastAPI integration
+   └─ [existing documentation]
 ```
 
 ## Test Harness (T1–T4)
@@ -285,7 +371,7 @@ For detailed treatment, see [GEOPHASE.md](GEOPHASE.md) and [MATHEMATICS.md](MATH
 
 ## Current Status
 
-✅ **v0.2.0 (Covenant + ECC Integrated + Dual Geo Phase Audit)**
+✅ **v0.2.0 (Covenant + ECC Integrated + Dual Geo Phase Audit + EIP-712 Auth + Capability Destruction)**
 
 - [x] AEAD encryption (ChaCha20-Poly1305)
 - [x] Reed–Solomon ECC with deterministic interleaving
@@ -293,20 +379,35 @@ For detailed treatment, see [GEOPHASE.md](GEOPHASE.md) and [MATHEMATICS.md](MATH
 - [x] Dual Geo Phase structural audit (28 tests, batch + strict checks)
 - [x] T1–T4 black-box verification harness
 - [x] Deterministic + HKDF KDF modes (feature-flagged)
+- [x] **EIP-712 PolicyGrant authentication** (wallet-native signatures)
+- [x] **Base L2 on-chain revocation** (fail-closed)
+- [x] **Cryptographic capability destruction** (irreversible, NOT GDPR)
 - [x] Complete documentation (tuning guide, release notes, audit guide)
 
-**All tests passing:** 67/67 (28 dual-phase + 39 core/transport tests)  
+**All tests passing:** 97/97 (30 auth/destruction + 28 dual-phase + 39 core/transport tests)  
 **Covenant preserved:** 5 non-regression tripwires, all green  
-**Angular distance audit:** Dual phases decorrelated (cosine < 0.95, 95% pass rate)
+**Angular distance audit:** Dual phases decorrelated (cosine < 0.95, 95% pass rate)  
+**Auth layer:** EIP-712 + fail-closed gate enforcement  
+**Destruction layer:** Immutable ledger + 410 Gone semantics
 
 ## Testing
 
-Run all tests (67 total):
+Run all tests (97 total):
 ```bash
 python -m pytest tests/ -v
 ```
 
-Run just dual-phase audit (28 tests):
+Run authentication tests (12 tests):
+```bash
+python -m pytest tests/test_policy_grant.py -v
+```
+
+Run destruction layer tests (18 tests):
+```bash
+python -m pytest tests/test_destruction.py -v
+```
+
+Run dual-phase audit (28 tests):
 ```bash
 python -m pytest tests/test_dual_phase_distance.py -v
 ```
@@ -342,19 +443,34 @@ See [ECC_TUNING.md](ECC_TUNING.md) for detailed tuning, measurement, and proof.
 
 ## Documentation
 
+### Core System
 - **[GEOPHASE.md](GEOPHASE.md)** — Conceptual model & architecture
 - **[ECC_TUNING.md](ECC_TUNING.md)** — Noise robustness tuning & T4 measurement
 - **[RELEASE_v0.2.0.md](RELEASE_v0.2.0.md)** — Release notes & feature summary
 - **[SECURITY.md](SECURITY.md)** — Security policy & covenant enforcement
 - **[MATHEMATICS.md](MATHEMATICS.md)** — Formal proofs & theorems
 
+### Authentication & Destruction (New)
+- **[docs/EIP712_POLICY_GRANT.md](docs/EIP712_POLICY_GRANT.md)** — Wallet-native authentication guide
+- **[docs/CAPABILITY_DESTRUCTION.md](docs/CAPABILITY_DESTRUCTION.md)** — Cryptographic destruction layer
+- **[docs/INTEGRATION_QUICKSTART.md](docs/INTEGRATION_QUICKSTART.md)** — FastAPI integration tutorial
+
 ## Auditor Checklist
 
+### Core System
 - Verify covenant gate: [src/geophase/covenant.py](src/geophase/covenant.py)
 - Verify CI tripwires: [tests/test_covenant_gate.py](tests/test_covenant_gate.py)
 - Verify AEAD primitive: [src/geophase/codec.py](src/geophase/codec.py)
 - Verify black-box harness: [scripts/public_test.py](scripts/public_test.py)
 - Verify tuning procedure: [ECC_TUNING.md](ECC_TUNING.md)
+
+### Authentication & Destruction
+- Verify EIP-712 signatures: [src/geophase/eth/eip712_policy_grant.py](src/geophase/eth/eip712_policy_grant.py)
+- Verify gate enforcement: [src/geophase/eth/fastapi_gate.py](src/geophase/eth/fastapi_gate.py)
+- Verify secure deletion: [src/geophase/storage/destruction.py](src/geophase/storage/destruction.py)
+- Verify ledger immutability: [src/geophase/ledger/ledger.py](src/geophase/ledger/ledger.py)
+- Verify auth tests: [tests/test_policy_grant.py](tests/test_policy_grant.py)
+- Verify destruction tests: [tests/test_destruction.py](tests/test_destruction.py)
 
 ## License
 
