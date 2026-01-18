@@ -147,7 +147,7 @@ Create DER-encoded ECDSA signature with RFC6979 nonce and low-S normalization.
 Verify DER-encoded ECDSA signature.
 
 **Parameters:**
-- `pub_bytes`: Public key (65-byte uncompressed: 0x04 + x + y)
+- `pub_bytes`: Public key bytes. When produced by `pubkey_from_privkey`, this is a 64-byte uncompressed point (x || y, no 0x04 prefix). Compressed (33-byte) and standard uncompressed (65-byte 0x04 || x || y) encodings are also accepted.
 - `msg`: Original message
 - `sig_der`: DER-encoded signature
 
