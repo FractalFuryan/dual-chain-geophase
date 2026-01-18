@@ -166,7 +166,7 @@ Derive secp256k1 public key from private key.
 **Parameters:**
 - `priv_int`: Private key scalar in [1, q-1]
 
-**Returns:** Uncompressed 65-byte public key (0x04 + x + y)
+**Returns:** 64-byte uncompressed public key (x + y coordinates)
 
 **Raises:**
 - `ImportError` if ecdsa not installed
