@@ -30,7 +30,7 @@ GeoPhase Chain solves this by **separating cryptographic trust (AEAD) from geome
 
 - **Scalar Waze Appendix (optional):** Harmonic and discrete-symmetry interpretation  
   ([docs/APPENDIX_SCALAR_WAZE_UNIFIED.md](docs/APPENDIX_SCALAR_WAZE_UNIFIED.md))  
-  *Exploratory, non-fundamental, not used in protocol logic*
+  
 
 ---
 
