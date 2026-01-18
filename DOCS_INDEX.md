@@ -22,6 +22,10 @@ Quick navigation to GeoPhase Chain documentation by topic and audience.
 - **[QUICKSTART.md](QUICKSTART.md)** — Setup, encode/verify, first test
 - **[ECC_TUNING.md](ECC_TUNING.md)** — NSYM tuning matrix, measurement procedure, T4
 - **[README.md#transport-tuning](README.md#transport-tuning)** — Feature flags (HKDF, NSYM)
+- **[docs/EIP712_POLICY_GRANT.md](docs/EIP712_POLICY_GRANT.md)** — EIP-712 capability token authentication
+- **[docs/INTEGRATION_QUICKSTART.md](docs/INTEGRATION_QUICKSTART.md)** — PolicyGrant 5-minute setup guide
+- **[docs/CAPABILITY_DESTRUCTION.md](docs/CAPABILITY_DESTRUCTION.md)** — Cryptographic capability destruction (NOT GDPR)
+- **[src/geophase/eth/README.md](src/geophase/eth/README.md)** — Ethereum layer API reference
 
 ## For Deployers & Operators
 
@@ -42,6 +46,10 @@ Quick navigation to GeoPhase Chain documentation by topic and audience.
 | QUICKSTART.md | Setup guide | Developers |
 | RELEASE_v0.2.0.md | Release notes + blog | Product teams |
 | INTEGRATION_SUMMARY.md | Status + deployment | Operators |
+| **docs/EIP712_POLICY_GRANT.md** | **EIP-712 authentication architecture** | **Architects, integrators** |
+| **docs/INTEGRATION_QUICKSTART.md** | **PolicyGrant quick start** | **Developers** |
+| **docs/CAPABILITY_DESTRUCTION.md** | **Cryptographic capability destruction** | **Architects, operators** |
+| **src/geophase/eth/README.md** | **Ethereum layer API docs** | **Integrators** |
 | DOCS_INDEX.md | This file | Navigation |
 
 ## Key Concepts at a Glance
