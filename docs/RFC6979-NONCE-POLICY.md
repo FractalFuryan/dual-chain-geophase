@@ -1,9 +1,7 @@
-"""
 Nonce Policy for GeoPhase RFC6979 Signing
 
 This document specifies how RFC6979 deterministic nonce generation integrates
 with the GeoPhase covenant architecture.
-"""
 
 # RFC6979 Nonce Policy
 
